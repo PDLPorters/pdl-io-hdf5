@@ -1,5 +1,6 @@
 # Extra type mappings for PDL::NetCDF
 # basic C types
+I8 *			T_PVI
 int *			T_PVI
 size_t *		T_PVI
 hid_t 			T_IV
@@ -38,9 +39,12 @@ T_PDLD
 
 #############################################################################
 OUTPUT
-
+# T_PVI typemap copies the data in $var to $arg, up to the
+#  length of length($arg). This differs from the T_PV typemap
+#   where the data is copied up to a Null char (string terminator)
+#  T_PVI's will be used for getting raw data blocks out of the C-code
 T_PVI	
-        sv_setiv((SV*)$arg, (IV)*$var);
+        sv_setpvn((SV*)$arg, (char *) $var, SvCUR($arg));
 T_PDLB
 	PDL->SetSV_PDL($arg,$var);
 T_PDLS

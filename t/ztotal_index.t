@@ -119,6 +119,12 @@ $baseline =
         ]
     }
     attr1$;attr3 =>     {
+        dudeman23$; =>         [
+            /,
+            /dude2,
+            /mygroup,
+            /mygroup/subgroup,
+        ]
     }
     attr2 =>     {
         What?? =>         [

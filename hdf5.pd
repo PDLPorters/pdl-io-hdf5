@@ -682,17 +682,17 @@ sub _buildGroupIndex{
 	
 		$attrIndexElement = $attrIndex->{$group};
 		
-		if( grep(defined($_), @attrValues = @$attrIndexElement{@attrs})
-			 == @attrs){ # All Attrs exist
-			# Use multi-dimensional array emulation for the hash
-			#  key here because it should be quicker.
-			if( defined( $groupIndexElement->{$key = join($;,@attrValues)}) ) { # if already defined, add to the list
-				push @{$groupIndexElement->{$key}}, $group;
-			}
-			else{  # not already defined create new element
-				$groupIndexElement->{$key} = [ $group ];
-			}	
+		@attrValues = map defined($_) ? $_ : '',   @$attrIndexElement{@attrs}; # Groups with undefined attr will get a blank string for the value
+		
+
+		# Use multi-dimensional array emulation for the hash
+		#  key here because it should be quicker.
+		if( defined( $groupIndexElement->{$key = join($;,@attrValues)}) ) { # if already defined, add to the list
+			push @{$groupIndexElement->{$key}}, $group;
 		}
+		else{  # not already defined create new element
+			$groupIndexElement->{$key} = [ $group ];
+		}	
 	}
 	
 	# initialize group index if it doesn't exist.

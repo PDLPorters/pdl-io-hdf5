@@ -199,6 +199,40 @@ sub DESTROY {
 
 }
 
+# 
+# Utility function (Not a Method!!!)
+#  to pack a perl list into a binary structure
+#  to be interpereted as a C array of long longs. This code is build
+#  during the make process to do the Right Thing for big and little
+#  endian machines
+sub packList{
+
+	my @list = @_;
+	
+	if(ref($_[0]){
+		croak(__PACKAGE__."::packList is not a method!\n");
+	}
+	
+EOPM
+
+# Packing of long int array structure differs depending on 
+# if the current machine is little or big endian.   This logic
+#  probably won't work for 'weird' byte order machine, but for most
+#  others (intel, vax, sun, etc) it should be OK.
+#
+if( $Config{'byteorder'} =~ /^1/){ # little endian
+   pp_addpm("\t".'@dims = map { $_,0 } @dims; # Intersperse zeros to make 64 bit hsize_t');
+
+}
+else{ # Big Endian Machine
+   pp_addpm("\t".'@dims = map { 0,$_ } @dims; # Intersperse zeros to make 64 bit hsize_t');
+}
+
+pp_addpm(<<'EOPM');
+	my $dims = pack ("L*", @dims);
+	
+	return $dims;
+}
 EOPM
 
 

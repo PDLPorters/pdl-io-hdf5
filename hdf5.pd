@@ -69,15 +69,21 @@ added later.)
 
 	#Groups
 	my $group = $newfile->group("/mygroup"); # create a new or open existing group
-	my @groups = $existingFile->groups;  # get a list of all the groups
+	my @groups = $existingFile->groups;  # get a list of all the groups at the root '/'
+					     # level.
+	my @groups = $group->groups;         # get a list of all the groups at the "mygroup"
+					     # level.
 
 	my $attrValue = $group->attrGet('AttrName');  # Get attribute value for a group
-	$group->attrSet('AttrName' => 'AttrValue');   # Set attribute value for a group
+	$group->attrSet('AttrName' => 'AttrValue');   # Set attribute value(s) for a group
 	$group->attrDel('AttrName1', 'AttrName2');    # Delete attribute(s) for a group
 	@attrs = $group->attrs;                       # Get List of attributes for a group
 
 	# Data Sets
 	my $dataset = $group->dataset( 'datasetName'); # create a new or open existing dataset
+	my $dataset2 = $newfile->dataset( 'datasetName'); # create a new or open existing dataset
+							  # in the root group.
+	my @datasets =  $existingFile->datasets;       # get a list of all datasets in the root '/' group
 	my @datasets =  $group->datasets;              # get a list of all datasets in a group
 	$pdl = $dataset->get();                    # Get the array data in the dataset
 	$dataset->set($pdl);                       # Set the array data in the dataset

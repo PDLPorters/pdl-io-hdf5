@@ -429,7 +429,7 @@ B<Usage:>
 
 =for usage
 
-   $group->attrSet( 'attr1' => 'attr1Value',
+   $dataset->attrSet( 'attr1' => 'attr1Value',
    		    'attr2' => 'attr2 value', 
 		    .
 		    .
@@ -445,12 +445,12 @@ sub attrSet {
 
 	my %attrs = @_; # get atribute hash
 	
-	my $groupID = $self->{groupID};
 	my $datasetID = $self->{datasetID};
 
 	unless( $datasetID){ # Error checking
 		carp("Can't Set Attribute for empty dataset. Try writing some data to it first:\n");
 		carp("    in file:group: '".$self->{filename}.":".$self->{group}."'\n");
+		return undef;
 	}
 	
 	my($key,$value);
@@ -471,11 +471,11 @@ sub attrSet {
 		#Note: If a attr already exists, then it will be deleted an re-written
 		# Delete the attribute first
 		PDL::HDF5::H5errorOff();  # keep h5 lib from complaining
-		PDL::HDF5::H5Adelete($groupID, $key);
+		PDL::HDF5::H5Adelete($datasetID, $key);
 		PDL::HDF5::H5errorOn();
 
 		
-		$attrID = PDL::HDF5::H5Acreate($groupID, $key, $typeID, $dataspaceID, PDL::HDF5::H5P_DEFAULT());
+		$attrID = PDL::HDF5::H5Acreate($datasetID, $key, $typeID, $dataspaceID, PDL::HDF5::H5P_DEFAULT());
 
 		if($attrID < 0 ){
 			carp "Error in ".__PACKAGE__." attrSet; Can't create attribute '$key'\n";
@@ -516,7 +516,7 @@ B<Usage:>
 
 =for usage
 
-   $group->attrDel( 'attr1', 
+ $dataset->attrDel( 'attr1', 
       		    'attr2',
 		    .
 		    .
@@ -532,8 +532,8 @@ sub attrDel {
 
 	my @attrs = @_; # get atribute names
 	
-	my $groupID = $self->{groupID};
-	
+	my $datasetID = $self->{datasetID};
+
 	my $attr;
 	my $rc; #Return code returned by H5Adelete
 	foreach $attr( @attrs ){
@@ -541,7 +541,7 @@ sub attrDel {
 
 		# Note: We don't consider errors here as cause for aborting, we just
 		#  complain using carp
-		if( PDL::HDF5::H5Adelete($groupID, $attr) < 0){
+		if( PDL::HDF5::H5Adelete($datasetID, $attr) < 0){
 			carp "Error in ".__PACKAGE__." attrDel; Error Deleting attribute '$attr'\n";
 		}
 		
@@ -556,14 +556,14 @@ sub attrDel {
 
 =for ref
 
-Get a list of all attribute names in a group
+Get a list of all attribute names associated with a dataset
 
 
 B<Usage:>
 
 =for usage
 
-   @attrs = $group->attrs;
+   @attrs = $dataset->attrs;
 
 
 =cut
@@ -571,11 +571,11 @@ B<Usage:>
 sub attrs {
 	my $self = shift;
 
-	my $groupID = $self->{groupID};
+	my $datasetID = $self->{datasetID};
 	
 	my $defaultMaxSize = 256; # default max size of a attribute name
 
-	my $noAttr = PDL::HDF5::H5Aget_num_attrs($groupID); # get the number of attributes
+	my $noAttr = PDL::HDF5::H5Aget_num_attrs($datasetID); # get the number of attributes
 
 	my $attrIndex = 0; # attribute Index
 
@@ -587,7 +587,7 @@ sub attrs {
 	# Go thru each attribute and get the name
 	for( $attrIndex = 0; $attrIndex < $noAttr; $attrIndex++){
 
-		$attributeID = PDL::HDF5::H5Aopen_idx($groupID, $attrIndex );
+		$attributeID = PDL::HDF5::H5Aopen_idx($datasetID, $attrIndex );
 
 		if( $attributeID < 0){
 			carp "Error in ".__PACKAGE__." attrs; Error Opening attribute number $attrIndex\n";

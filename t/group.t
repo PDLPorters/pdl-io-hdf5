@@ -7,7 +7,7 @@ use PDL::HDF5::Dataset;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..11\n";  
+print "1..16\n";  
 
 my $testNo = 1;
 
@@ -82,6 +82,31 @@ my $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
 
 ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+
+
+
+# Set attribute for dataset
+ok($testNo++, $dataset->attrSet( 'attr1' => 'dataset dudeman', 'attr2' => 'Huh What??'));
+
+# Try Setting attr for an existing attr
+ok($testNo++,$dataset->attrSet( 'attr1' => 'dataset dudeman23'));
+
+
+# Add a attribute and then delete it
+ok($testNo++, $dataset->attrSet( 'dummyAttr' => 'dummyman', 
+				'dummyAttr2' => 'dummyman'));
+				
+
+ok($testNo++, $dataset->attrDel( 'dummyAttr', 'dummyAttr2' ));
+
+
+# Get list of attributes
+@attrs = $dataset->attrs;
+ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+
+
+
+
 
 unlink("newfile.hd5");
 

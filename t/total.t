@@ -1,6 +1,7 @@
 use PDL;
 use PDL::Char;
 use PDL::HDF5;
+use PDL::Types;
 
 # Script to test the PDL::HDF5 objects together in the
 #   way they would normally be used
@@ -8,7 +9,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..28\n";  
+print "1..29\n";  
 
 my $testNo = 1;
 
@@ -89,7 +90,7 @@ my $subgroup = $group->group("subgroup");
 # Create a dataset in the subgroup
 $dataset = $subgroup->dataset('my dataset');
 
-$pdl = sequence(5,4);
+$pdl = sequence(5,4)->float; # Try a non-default data type
 
 
 ok($testNo++, $dataset->set($pdl) );
@@ -100,6 +101,9 @@ $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
 
 ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+
+# Check for the PDL returned being a float
+ok($testNo++, ($pdl->get_datatype - $PDL_F) < .001 );
 
 ################ Set Attributes at the Dataset Leve ###############			
 					

@@ -379,9 +379,15 @@ sub get{
 	else{  # Normal Numeric Type
 		# Map the HDF5 file datatype to a PDL datatype
 		$PDLtype = $PDL::Types::PDL_D; # Default type is double
-		if( defined($HDF5toPDLfileMapping{$HDF5type}) ){
-			$PDLtype = $HDF5toPDLfileMapping{$HDF5type};
+		
+		my $defaultType;
+		foreach $defaultType( keys %HDF5toPDLfileMapping){
+			if( PDL::HDF5::H5Tequal($defaultType,$HDF5type) > 0){
+				$PDLtype = $HDF5toPDLfileMapping{$defaultType};
+				last;
+			}
 		}
+		
 	
 		# Get the HDF5 internal datatype that corresponds to the PDL type
 		unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){

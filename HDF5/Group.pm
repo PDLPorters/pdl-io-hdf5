@@ -58,7 +58,7 @@ following syntax is used by the L<PDL::HDF5> object to build the object.
    
    $a = new PDL::HDF5:Group( groupName => $name, parentName => $parentName, parentID => $parentID );
 	Args:
-	$name				Name of the group
+	$name				Name of the group (relative to the parent)
 	$parentName			Filename that owns this group
 	$parentID			FileID of the file that owns this group
 
@@ -91,6 +91,10 @@ sub new{
 	my $parentName = $self->{parentName};
 	my $groupName = $self->{groupName};
 	my $groupID;
+	
+	# Adjust groupname to be absolute:
+	$self->{groupName} = "$parentName/$groupName";
+	
 
 	# Turn Error Reporting off for the following, so H5 lib doesn't complain
 	#  if the group isn't found.
@@ -588,6 +592,84 @@ sub groups {
 	return @totalgroups;
   
 }
+
+
+
+=head2 groupName
+
+=for ref
+
+Get the name of the group (absolute to the root group)
+
+
+B<Usage:>
+
+=for usage
+
+   print $group->groupName;
+
+
+=cut
+
+sub groupName {
+	my $self = shift;
+
+	
+	return $self->{groupName};
+  
+}
+
+=head2 _buildAttrIndex
+
+=for ref
+
+Internal Recursive Method to build the attribute index hash
+for the object
+
+
+B<Usage:>
+
+=for usage
+
+   $group->_buildAttrIndex($index);
+
+ Input: $index hash-ref
+ 
+ Output:
+    Updated $index hash ref
+
+
+=cut
+
+sub _buildAttrIndex{
+
+	my ($self, $index) = @_;
+	
+	# Take care of any attributes in the current group
+	my @attrs = $self->attrs;
+	
+	my @attrValues = $self->attrGet(@attrs);
+	
+	# Get the group name
+	my $groupName = $self->groupName;
+	
+	my %indexElement; # element of the index for this group
+	
+	@indexElement{@attrs} = @attrValues;
+	
+	$index->{$groupName} = \%indexElement;
+	
+	 
+	# Now Do any subgroups: 
+	my @subGroups = $self->groups;
+	my $subGroup;
+	
+	foreach $subGroup(@subGroups){
+		$self->group($subGroup)->_buildAttrIndex($index);
+	}
+	
+}
+
 
 
 1;

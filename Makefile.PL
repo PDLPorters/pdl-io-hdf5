@@ -92,11 +92,13 @@ WriteMakefile(
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',
-	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm'},
+	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm',
+	      			  'HDF5/Group.pm' => '$(INST_LIBDIR)/HDF5/Group.pm',
+				},
 	      'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path", 
 	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
-				   'HDF5.pm HDF5.xs HDF5.o HDF5.c'},
+				   'HDF5.pm HDF5.xs HDF5.o HDF5.c HDF5/Group.pm'},
 	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz' },	
 	      );
 

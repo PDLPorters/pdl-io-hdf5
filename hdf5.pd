@@ -40,20 +40,33 @@ capability.
 
 =head1 SYNOPSIS
 
-        use PDL;
 	use PDL::HDF5;
+	
+	# Files
+	my $newfile = new PDL::HDF5("newfile.hdf"); # create new hdf5 file
+	my $attrValue = $existingFile->attrGet('AttrName'); # Get attribute value for file
+	$existingFile->attSet('AttrName' => 'AttrValue');   # Set attribute value for file
 
-	my $outFile = new PDL::HDF5($filename);
-        
-        !!!!!! Need more examples here !!!!!!!!
-        
+	#Groups
+	my $group = $newfile->group("/mygroup"); # create a new or open existing group
+	my @groups = $existingFile->groups;  # get a list of all the groups
+
+	my $attrValue = $group->attrGet('AttrName'); # Get attribute value for a group
+	$group->attSet('AttrName' => 'AttrValue');   # Set attribute value for a group
+
+	# Data Sets
+	my $dataset = $group->dataset( 'datasetName'); # create a new or open existing dataset
+	my @datasets =  $group->datasets;              # get a list of all datasets in a group
+	$pdl = $dataset->dataGet();                    # Get the array data in the dataset
+	$dataset->dataSet($pdl);                       # Set the array data in the dataset
+	my $attrValue = $dataset->attrGet('AttrName'); # Get attribute value for a dataset
+	$group->attSet('AttrName' => 'AttrValue');     # Set attribute value(s) for a dataset
 
 =head1 MEMBER DATA
 
-
 =over 1
 
-=item _fileID
+=item fileID
 
 ID number given to the file by the HDF5 library
 
@@ -246,7 +259,7 @@ EOPM
 sub create_low_level {
 
 # This file must be modified to only include 
-# netCDF 3 function definitions.
+# hdf5 3 function definitions.
 # Also, all C function declarations must be on one line.
   my $defn = shift;
   my @lines = split (/\n/, $defn);
@@ -256,7 +269,7 @@ sub create_low_level {
     next if (/^\#/);  # Skip commented out lines
     next if (/^\s*$/); # Skip blank lines
 
-    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\s*\((.+)\)\;/;
+    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\s*\((.*)\)\;/;
     my @parms = split (/,/, $parms);
 
     my @vars  = ();
@@ -293,7 +306,7 @@ sub create_low_level {
 	$xsout .= "$vars[$i],";
       }
     }
-    chop ($xsout);  # remove last comma
+    chop ($xsout) if( $xsout =~ /\,$/s);  # remove last comma, if present
     $xsout .= ");\n";
     $xsout .= "OUTPUT:\n";
     $xsout .= "\tRETVAL\n";
@@ -316,6 +329,10 @@ sub create_low_level {
 create_low_level (<<'EODEF');
 # HDF5 Functions we create an interface to using the perl XS code
 #
+# Note: H5Gget_objinfo arg statbuf has been changed from a H5G_stat_t type to 
+# a const void type to avoid compilation errors. This function only used
+# to determine if a group exists, so the statbuf variable is not used as 
+# I/O variable as stated in the HDF5 docs.
 
 hid_t H5Fcreate (const char *name, unsigned flags, hid_t create_id, hid_t access_id); 
 hid_t H5Fopen (const char *name, unsigned flags, hid_t access_id); 
@@ -329,6 +346,12 @@ herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t f
 hid_t H5Dclose (hid_t dataset_id);
 hid_t H5Acreate (hid_t loc_id, const char *name, hid_t type_id, hid_t space_id, hid_t create_plist); 
 herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, void *buf);
+hid_t H5Gcreate(hid_t loc_id, const char *name, size_t size_hint);
+hid_t H5Gopen(hid_t loc_id, const char *name);
+herr_t H5Gclose(hid_t group_id);
+herr_t H5Gget_objinfo(hid_t loc_id, const char *name, hbool_t follow_link, const void *statbuf);
+herr_t H5errorOn();
+herr_t H5errorOff();
 
 EODEF
 
@@ -471,6 +494,34 @@ pp_add_exported('', <<'EOPM');
 	H5T_UNIX_D64LE
 EOPM
 
+###############################################################
+# XS Code that implements self-contained turn-on/off for
+#  the h5 library error reporting. We can turn error reporting
+#  selectively on and off to keep the library from complaining
+#  when we are doing things like checking to see if a particular
+#  group name exists.
+
+pp_addhdr(<<'EOXS');
+
+/* ############################################################### 
+#
+#  H5 Library error reporting turn-on/off functions
+#
+#   This originally generated using h2xs and manually editing
+#
+*/ 
+herr_t
+H5errorOff()
+{
+	return H5Eset_auto(NULL, NULL );
+}
+
+herr_t
+H5errorOn()
+{
+	return H5Eset_auto((herr_t(*)(void*))H5Eprint, stderr );
+}
+EOXS
 ###############################################################
 # XS Code that implements the HDF constants 
 #  Using the AUTOLOAD routine, any calls to hdf5 constants, like 
@@ -1369,6 +1420,8 @@ double
 constant(name,arg)
 	char *		name
 	int		arg
+	
+
 EOXS
 ############### Add Autoload Routine for the hdf5 constants ##########
 

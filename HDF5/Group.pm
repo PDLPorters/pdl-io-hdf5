@@ -148,8 +148,8 @@ B<Usage:>
 
 sub DESTROY {
   my $self = shift;
-
-  if( H5Gclose($self->{groupID}) < 0){
+  print "In Group DEstroy\n";
+  if( PDL::HDF5::H5Gclose($self->{groupID}) < 0){
 	warn("Error closing HDF5 Group '".$self->{name}."' in file '".$self->{parentName}."'\n");
   }
 

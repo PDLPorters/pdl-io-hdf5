@@ -149,8 +149,9 @@ B<Usage:>
 sub DESTROY {
   my $self = shift;
   my $datasetID = $self->{datasetID};
+  print "In DataSet DEstroy\n";
 
-  if( $datasetID && (H5Dclose($self->{datasetID}) < 0 )){
+  if( $datasetID && (PDL::HDF5::H5Dclose($self->{datasetID}) < 0 )){
 	warn("Error closing HDF5 Dataset '".$self->{name}."' in file:group: '".$self->{filename}.":".$self->{group}."'\n");
   }
 

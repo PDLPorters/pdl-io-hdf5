@@ -197,22 +197,43 @@ sub set{
 	my $groupID = $self->{groupID};
 	my $datasetID = $self->{datasetID};
 	my $name = $self->{name};
+	my $internalhdf5_type;  # hdf5 type that describes the way data is stored in memory
+	my $hdf5Filetype;       # hdf5 type that describes the way data will be stored in the file.
+	my @dims;               # hdf5 equivalent dims for the supplied PDL
 
 	my $type = $pdl->get_datatype; # get PDL datatype
+	if( $pdl->isa('PDL::Char') ){ #  Special Case for PDL::Char Objects (fixed length strings)
+	
+		@dims = $pdl->dims;
+		my $length = shift @dims; # String length is the first dim of the PDL for PDL::Char
+		# Create Null-Terminated String Type 
+		$internalhdf5_type = PDL::HDF5::H5Tcopy(PDL::HDF5::H5T_C_S1());
+		PDL::HDF5::H5Tset_size($internalhdf5_type, $length ); # make legth of type eaual to strings
+		$hdf5Filetype =  $internalhdf5_type; # memory and file storage will be the same type
+		
+		@dims = reverse(@dims);  # HDF5 stores columns/rows in reverse order than pdl
 
-	unless( defined($PDLtoHDF5internalTypeMapping{$type}) ){
-		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
-		return undef;
 	}
-	my $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$type};
+	else{   # Other PDL Types
 
-	unless( defined($PDLtoHDF5fileMapping{$type}) ){
-		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
-		return undef;
-	}	
-	my $hdf5Filetype = $PDLtoHDF5fileMapping{$type};
 
-	my @dims = reverse($pdl->dims); # HDF5 stores columns/rows in reverse order than pdl
+		unless( defined($PDLtoHDF5internalTypeMapping{$type}) ){
+			carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+			return undef;
+		}
+		$internalhdf5_type = $PDLtoHDF5internalTypeMapping{$type};
+	
+		unless( defined($PDLtoHDF5fileMapping{$type}) ){
+			carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+			return undef;
+		}	
+		$hdf5Filetype = $PDLtoHDF5fileMapping{$type};
+
+
+		@dims = reverse($pdl->dims); # HDF5 stores columns/rows in reverse order than pdl
+
+	}
+
 
 	
 	
@@ -276,6 +297,7 @@ to the following table.
 
  HDF5 File Type				PDL Type
  ------------------------               -----------------
+ PDL::HDF5::H5T_C_S1()		=>      PDL::Char Object    (Special Case for Char Strings)
  PDL::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B
  PDL::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
  PDL::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,

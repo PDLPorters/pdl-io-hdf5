@@ -1,4 +1,5 @@
 use PDL;
+use PDL::Char;
 use PDL::HDF5;
 
 # Script to test the PDL::HDF5 objects together in the
@@ -7,7 +8,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..27\n";  
+print "1..28\n";  
 
 my $testNo = 1;
 
@@ -55,6 +56,13 @@ my $pdl = sequence(5,4);
 ok($testNo++, $dataset->set($pdl) );
 # print "pdl written = \n".$pdl."\n";
 
+# Create String dataset using PDL::Char
+my $dataset2 = $hdfobj->dataset('charData');
+
+my $pdlChar = new PDL::Char( [ ["abccc", "def", "ghi"],["jkl", "mno", 'pqr'] ] );
+ 
+ok($testNo++,$dataset2->set($pdlChar));
+
 
 my $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
@@ -66,10 +74,10 @@ my @dims = $dataset->dims;
 
 ok( $testNo++, join(", ",@dims) eq '5, 4' );
 
-# Get a list of datasets (should be one)
+# Get a list of datasets (should be two)
 my @datasets = $hdfobj->datasets;
 
-ok($testNo++, scalar(@datasets) == 1 );
+ok($testNo++, scalar(@datasets) == 2 );
 
 
 #############################################

@@ -522,7 +522,6 @@ pp_addhdr(<<'EOXS');
 #
 #  H5 Library error reporting turn-on/off functions
 #
-#   This originally generated using h2xs and manually editing
 #
 */ 
 herr_t
@@ -536,6 +535,75 @@ H5errorOn()
 {
 	return H5Eset_auto((herr_t(*)(void*))H5Eprint, stderr );
 }
+
+/* ############################################################### 
+#
+#  Operator Interation Functions (Supplied to and called by 'H5Giterate') 
+#  used to get the number of datasets in a group, 
+#   and the names of the dataset in the group.
+
+#
+#
+*/
+/*
+ * Operator function to get number of datasets
+ */
+herr_t incIfDset(hid_t loc_id, const char *name, void *opdata)
+{
+    H5G_stat_t statbuf;
+    unsigned int * dsetCount;
+
+    dsetCount = (unsigned int *) opdata; 
+    /*
+     * Get type of the object and increment *dsetCount
+     *  if it is a dataset
+     * The name of the object is passed to this function by 
+     * the Library. Some magic :-)
+     */
+    H5Gget_objinfo(loc_id, name, FALSE, &statbuf);
+    if( statbuf.type == H5G_DATASET){
+          (*dsetCount)++;
+    }       
+    return 0;
+ }
+
+/*
+ * Operator function to fill up char array of dataset names
+ *
+ *  opdata is a pointer to an Array of strings (i.e. 2D char array)
+ */
+herr_t getName_if_Dset(hid_t loc_id, const char *name, void *opdata)
+{
+    H5G_stat_t statbuf;
+    char ** datasetName;
+  
+    char *** tempptr;
+    tempptr = (char ***) opdata;
+
+    datasetName =  *tempptr; 
+    /*
+     * Get type of the object.
+     *  If it is a dataset, get allocate space for it at *datasetName
+     *  Increment *tempptr so we will be looking at the next name space when
+     *  this function is called again.
+     *
+     *  Note: The calling function must take care of freeing memory allocateed
+     *        
+     */
+    H5Gget_objinfo(loc_id, name, FALSE, &statbuf);
+    if( statbuf.type == H5G_DATASET){
+          
+         *datasetName = (char *) malloc( (strlen(name)+1) * sizeof(char));
+         if( *datasetName == NULL){
+            printf("PDL::HDF5; Out of Memory in getName_if_Dset\n");
+            exit(1);
+         }
+
+         strcpy(*datasetName,name);
+         (*tempptr)++;
+     }
+    return 0;
+ } 
 EOXS
 ###############################################################
 # XS Code that implements the HDF constants 
@@ -1435,7 +1503,7 @@ double
 constant(name,arg)
 	char *		name
 	int		arg
-	
+
 
 EOXS
 ############### Add Autoload Routine for the hdf5 constants ##########
@@ -1468,6 +1536,64 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 EOPM
+
+# Code that implements the dataset count and dataset name functions
+pp_addxs('',<<'EOXS');
+
+# Code to get the number of datasets in a group
+
+int
+H5GgetDatasetCount( groupID, groupName )
+	hid_t	groupID
+	char * 	groupName
+CODE:
+	int	dsetCount = 0;
+        H5Giterate(groupID, groupName, NULL, incIfDset, &dsetCount);
+	RETVAL = dsetCount;
+OUTPUT:
+	RETVAL
+
+
+# Code to get the names of the datasets in a group
+
+void
+H5GgetDatasetNames( groupID, groupName )
+	hid_t	groupID
+	char * 	groupName
+PREINIT:
+	int	dsetCount = 0;
+	char ** datasetNames;  /* Array of dataset names */
+	char ** datasetPtr;    /* temp pointer to datasetNames */
+	int i; 	               /* Index variable */
+PPCODE:
+	/* Get the number of datasets */
+        H5Giterate(groupID, groupName, NULL, incIfDset, &dsetCount);
+	
+	if( dsetCount > 0){ /* Datasets found */
+		
+		/* Allocate Space  for array of strings */
+		datasetNames = (char **) malloc( dsetCount * sizeof(char *));
+		if( datasetNames == NULL){
+			printf("PDL::HDF5; out of Memory in H5GgetDatasetNames\n");
+			exit(1);
+		}
+ 
+		datasetPtr = datasetNames;
+
+		H5Giterate(groupID, groupName, NULL, getName_if_Dset, &datasetPtr);
+
+		EXTEND(SP, dsetCount); /* Make room for results on the return stack */
+		for( i = 0; i< dsetCount; i++){ /* Push Names onto return stack */
+		       /*  printf("Name found = '%s'\n",datasetNames[i]); */
+		       PUSHs(sv_2mortal(newSVpv(datasetNames[i],0)));
+		       free(datasetNames[i]); /* Release Memory */
+		}
+
+		free(datasetNames);
+	}
+
+
+EOXS
 
 
 pp_done();

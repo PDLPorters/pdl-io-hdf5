@@ -1,7 +1,7 @@
 use PDL::HDF5;
 use PDL::HDF5::Group;
 
-print "1..6\n";  
+print "1..7\n";  
 
 my $testNo = 1;
 
@@ -34,6 +34,11 @@ ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 # Get list of attributes
 my @attrs = $group->attrs;
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+
+# Get a list of datasets (should be none)
+my @datasets = $group->datasets;
+
+ok($testNo++, scalar(@datasets) == 0 );
 
 unlink("newfile.hd5");
 

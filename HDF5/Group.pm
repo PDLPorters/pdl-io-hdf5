@@ -89,7 +89,8 @@ sub new{
 	my $fileID = $self->{fileID};
 	my $filename = $self->{filename};
 	my $name = $self->{name};
-	
+	my $groupID;
+
 	# Turn Error Reporting off for the following, so H5 lib doesn't complain
 	#  if the group isn't found.
 	PDL::HDF5::H5errorOff();
@@ -98,7 +99,7 @@ sub new{
 	# See if the group exists:
 	if(  $rc >= 0){ 
 		#Group Exists open it:
-		my $groupID = PDL::HDF5::H5Gopen($fileID, $name);
+		$groupID = PDL::HDF5::H5Gopen($fileID, $name);
 	}
 	else{  # group didn't exist, create it:
 		$groupID = PDL::HDF5::H5Gcreate($fileID, $name, 0);
@@ -122,7 +123,7 @@ sub new{
 
 =for ref
 
-PDL::HDF5 Desctructor - Closes the HDF5 file
+PDL::HDF5 Destructor - Closes the HDF5::Group Object.
 
 B<Usage:>
 
@@ -339,6 +340,39 @@ sub attrs {
 	return @attrNames;
   
 }
+
+=head2 datasets
+
+=for ref
+
+Get a list of all dataset names in a group
+
+
+B<Usage:>
+
+=for usage
+
+   @datasets = $group->datasets;
+
+
+=cut
+
+sub datasets {
+	my $self = shift;
+
+	my $groupID = $self->{groupID};
+	
+
+	my $groupName = $self->{name};
+	
+	my @totalDatasets = PDL::HDF5::H5GgetDatasetNames($groupID,$groupName);
+	
+		
+	
+	return @totalDatasets;
+  
+}
+
 
 1;
 

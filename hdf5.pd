@@ -140,6 +140,7 @@ B<Example:>
 =cut
 
 
+
 sub new {
   my $type = shift;
   my $file = shift;
@@ -219,17 +220,51 @@ B<Usage:>
    
 Returns undef on failure, 1 on success.
 
-Note: This is a convienence method that is equivalent to:
-
-  $HDFfile->group("/")->attrSet( 'attr1' => 'attr1Value',
-				 'attr2' => 'attr2 value', 
-				 .
-				 .
-				 .
-				);
 
 
 =cut
+
+sub group {
+	my $self = shift;
+
+	my $name = $_[0]; # get the group name
+	
+	my $fileID = $self->{fileID};
+	my $filename = $self->{filename};
+	
+	my $group =  new PDL::HDF5::Group( 'name'=> $name, filename => $filename,
+					fileID => $fileID );
+
+}
+
+
+=head2 groups
+
+=for ref
+
+Get a list of groups in the root "/" group (i.e. top level)
+of the HDF5 file.
+
+
+B<Usage:>
+
+=for usage
+
+   @groups = $HDFfile->groups;
+   
+
+=cut
+
+sub groups {
+	my $self = shift;
+	
+	my @groups = $self->group("/")->groups;
+		
+	return @groups;
+	
+
+}
+
 
 =head2 attrSet
 
@@ -1773,6 +1808,13 @@ EOXS
 
 pp_addpm( {At => Top}, <<'EOPM');
 
+use PDL::HDF5::Group;
+
+# Require needed here becuase dataset uses some of the XS 
+#  calls that are defined in PDL::HDF5 (like PDL::HDF5::H5T_NATIVE_CHAR() )
+#  Doing a 'use' would make use of the calls before they are defined.
+#
+require PDL::HDF5::Dataset;
 
 
 use Carp;
@@ -1911,5 +1953,10 @@ PPCODE:
 
 EOXS
 
+# Don't import anything from core but barf
+#  (Don't wan't to pollute our namespace)
+pp_core_importList(' qw/ barf/');
+ # set to not export anything. (This is a OO package, it doesn't need to export any methods.)
+pp_export_nothing;
 
 pp_done();

@@ -7,7 +7,7 @@ use PDL::Types;
 
 use Data::Dumper;
 
-print "1..5\n";  
+print "1..6\n";  
 
 my $testNo = 1;
 
@@ -101,6 +101,36 @@ q!$VAR1 = [
 $result = Dumper(\@names);
 ok($testNo++,$baseline eq $result );
 
+# Test building the groupIndex
+$hdfobj->_buildGroupIndex('attr1','attr2');
+$hdfobj->_buildGroupIndex('attr2');
+$hdfobj->_buildGroupIndex('attr1','attr3');
+
+$baseline = 
+"\$VAR1 = {
+          'attr2' => {
+                       'What??' => [
+                                     '/mygroup/subgroup',
+                                     '/mygroup',
+                                     '/dude2',
+                                     '/'
+                                   ]
+                     },
+          'attr1$;attr2' => {
+                             'dudeman23$;What??' => [
+                                                     '/mygroup/subgroup',
+                                                     '/mygroup',
+                                                     '/dude2',
+                                                     '/'
+                                                   ]
+                           },
+          'attr1$;attr3' => {}
+        };
+";
+
+# print Dumper($hdfobj->{groupIndex});
+$result = Dumper($hdfobj->{groupIndex});
+ok($testNo++,$baseline eq $result );
 
 print "completed\n";
 

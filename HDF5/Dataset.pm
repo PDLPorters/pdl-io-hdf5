@@ -677,5 +677,128 @@ sub attrs {
   
 }
 
+=head2 attrGet
+
+=for ref
+
+Get the value of an attribute(s)
+
+Currently the only attribute types supported are null-terminated strings.
+
+B<Usage:>
+
+=for usage
+
+   my @attrs = $dataset->attrGet( 'attr1', 'attr2');
+
+
+=cut
+
+sub attrGet {
+	my $self = shift;
+
+	my @attrs = @_; # get atribute array
+	
+	my $datasetID = $self->{datasetID};
+	
+	my($attrName,$attrValue);
+
+	my @attrValues; #return array
+	
+	my $typeID; # id used for attribute
+	my $dataspaceID; # id used for the attribute dataspace
+	
+	my $attrID;
+	foreach $attrName( @attrs){
+		
+		$attrValue = undef;
+		
+		# Open the Attribute
+		$attrID = PDL::HDF5::H5Aopen_name($datasetID, $attrName );
+		unless( $attrID >= 0){
+			carp "Error Calling ".__PACKAGE__."::attrget: Can't open HDF5 Attribute name '$attrName'.\n";
+			next;
+		}			
+		 
+		# Open the data-space
+		$dataspaceID = PDL::HDF5::H5Aget_space($attrID);
+		if( $dataspaceID < 0 ){
+			carp("Can't Open Dataspace for Attribute name '$attrName' in  ".__PACKAGE__."::attrget\n");
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}
+
+		# Check to see if the dataspace is simple
+		if( PDL::HDF5::H5Sis_simple($dataspaceID) < 0 ){
+			carp("Warning: Non-Simple Dataspace for Attribute name '$attrName' ".__PACKAGE__."::attrget\n");
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}
+
+
+		# Get the number of dims:
+		my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+		unless( $Ndims == 0){
+			if( $Ndims < 0 ){
+				carp("Warning: Can't Get Number of Dims in Attribute name '$attrName' Dataspace in ".__PACKAGE__.":get\n");
+			}
+			if( $Ndims > 0 ){
+				carp("Warning: Non-Scalar Dataspace for Attribute name '$attrName' Dataspace in ".__PACKAGE__.":get\n");
+			}			
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}
+
+
+		# Get the HDF5 dataset datatype;
+        	my $HDF5type = PDL::HDF5::H5Aget_type($attrID );
+		unless( $HDF5type >= 0 ){
+			carp "Error Calling ".__PACKAGE__."::attrGet: Can't get HDF5 Dataset type in Attribute name '$attrName'.\n";
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}
+		
+		# Get the size so we can allocate space for it
+		my $size = PDL::HDF5::H5Tget_size($HDF5type);
+		unless( $size){
+			carp "Error Calling ".__PACKAGE__."::attrGet: Can't get HDF5 Dataset type size in Attribute name '$attrName'.\n";
+			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}
+		
+		#init attr value to the length of the type
+		$attrValue = ' ' x ($size);
+		
+		if( PDL::HDF5::H5Aread($attrID, $HDF5type, $attrValue) < 0 ){
+			carp "Error Calling ".__PACKAGE__."::attrGet: Can't read Attribute Value for Attribute name '$attrName'.\n";
+			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			next;
+		}			
+
+
+
+		# Cleanup
+		carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+
+
+	}
+	continue{
+		
+		push @attrValues, $attrValue;
+	}
+
+	return @attrValues;
+
+}
+
 1;
 

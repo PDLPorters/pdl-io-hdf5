@@ -7,7 +7,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..21\n";  
+print "1..27\n";  
 
 my $testNo = 1;
 
@@ -93,6 +93,30 @@ $pdl2 = $dataset->get;
 
 ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 
+################ Set Attributes at the Dataset Leve ###############			
+					
+# Set attribute for group
+ok($testNo++, $dataset->attrSet( 'attr1' => 'DSdudeman', 'attr2' => 'DSWhat??'));
+
+# Try Setting attr for an existing attr
+ok($testNo++,$dataset->attrSet( 'attr1' => 'DSdudeman23'));
+
+
+# Add a attribute and then delete it
+ok($testNo++, $dataset->attrSet( 'dummyAttr' => 'dummyman', 
+				'dummyAttr2' => 'dummyman'));
+				
+ok($testNo++, $dataset->attrDel( 'dummyAttr', 'dummyAttr2' ));
+
+
+# Get list of attributes
+@attrs = $dataset->attrs;
+ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+
+# Get a list of attribute values
+@attrValues = $dataset->attrGet(sort @attrs);
+
+ok($testNo++, join(",",@attrValues) eq 'DSdudeman23,DSWhat??' );
 
 ################ Set Attributes at the Group Leve ###############			
 					

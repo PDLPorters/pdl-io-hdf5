@@ -583,8 +583,7 @@ B<Usage:>
  #   values of attributes 'attr1', 'attr2' in the file.
  #   Higher-Level
  $hdf5obj->allAttrValues('attr1', 'attr2');
- 
- 
+
 =cut
 
 sub allAttrValues{

@@ -19,7 +19,7 @@ EOH
 
 pp_bless ("PDL::HDF5");
 
-$VERSION = '0.01';
+$VERSION = '0.1';
 
                      
 pp_addpm(<<'EOPM');
@@ -593,6 +593,11 @@ pp_addpm(<<'EOPM');
 	
 	return @list;
 }
+
+=head1 AUTHOR
+
+John Cerney, j-cerney1@raytheon.com
+
 EOPM
 
 

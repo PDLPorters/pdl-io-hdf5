@@ -41,13 +41,14 @@ $b->attach($tree,
 			$mouseItem =~ /$;_Dset(.+)$/ ){   			  # and a dataset item
 			 my $datasetName = $1;
 			 my $text = $tree->entrycget($mouseItem,'-text');
-			 $text =~ /\: Dims (.+)$/;
- 			 my @dims = split(',',$1);
 			 my $elements = 1;
-			 my $message;
-			 foreach (@dims){
-				 $elements *= $_;
-			 }
+			 if(  $text =~ /\: Dims (.+)$/ ){
+ 				 my @dims = split(',',$1);
+				 my $message;
+				 foreach (@dims){
+					 $elements *= $_;
+				 }
+			}
 			if( $elements > $maxElements){
 				$message = "$elements Elements: Too Big To Display";
 			}

@@ -1,0 +1,1245 @@
+use Config;
+
+
+
+
+
+# Necessary includes for .xs file
+pp_addhdr(<<'EOH');
+#include <hdf5.h>
+#define PDLchar pdl
+#define PDLuchar pdl
+#define PDLshort pdl
+#define PDLint pdl
+#define PDLlong pdl
+#define PDLfloat pdl
+#define PDLdouble pdl
+#define uchar unsigned char
+EOH
+
+pp_bless ("PDL::HDF5");
+
+$VERSION = '0.01';
+
+
+pp_addpm(<<'EOPM');
+
+
+sub openHDF{
+
+	my ($file) = @_;
+	
+ 	#   /* Create a new file using default properties. */
+	my $file_id = H5Fcreate($file, H5F_ACC_TRUNC(), H5P_DEFAULT(), H5P_DEFAULT());
+	die("Can't Open HDF file '$file'\n") if( $file_id < 0);
+	
+	my @dims = (4,6);
+	
+     
+EOPM
+# Packing of long int array structure differs depending on 
+# if the current machine is little or big endian.   This logic
+#  probably won't work for 'weird' byte order machine, but for most
+#  others (intel, vax, sun, etc) it should be OK.
+#
+if( $Config{'byteorder'} =~ /^1/){ # little endian
+   pp_addpm("\t".'@dims = map { $_,0 } @dims; # Intersperse zeros to make 64 bit hsize_t');
+
+}
+else{ # Big Endian Machine
+   pp_addpm("\t".'@dims = map { 0,$_ } @dims; # Intersperse zeros to make 64 bit hsize_t');
+}
+
+pp_addpm(<<'EOPM');
+	my $dims = pack ("L*", @dims);
+   		
+ 					   
+	# 	
+	my $dataspace_id = H5Screate_simple(2, $dims , $dims);
+        die("Can't Open Dataspace\n") if( $dataspace_id < 0);
+
+	# /* Create the dataset. */
+	my $dataset_id = H5Dcreate($file_id, "/dset", H5T_STD_I32BE(), $dataspace_id, 
+                H5P_DEFAULT());
+        die("Can't Open dataset\n") if( $dataset_id < 0);
+
+	# /* End access to the dataset and release resources used by it. */
+	my $status = H5Dclose($dataset_id);
+        die("Can't close  dataset\n") if( $status < 0);
+
+	# /* Terminate access to the data space. */
+	$status = H5Sclose($dataspace_id);
+        die("Can't close  dataspace \n") if( $status < 0);
+
+	# /* Close the file. */
+	$status = H5Fclose($file_id);
+        die("Can't close  file \n") if( $status < 0);
+	
+}
+EOPM
+
+
+
+
+# Read in a modified hdf.h file.  Define
+# a low-level perl interface to hdf from these definitions.
+sub create_low_level {
+
+# This file must be modified to only include 
+# netCDF 3 function definitions.
+# Also, all C function declarations must be on one line.
+  my $defn = shift;
+  my @lines = split (/\n/, $defn);
+
+  foreach (@lines) {
+
+    next if (/^\#/);  # Skip commented out lines
+    next if (/^\s*$/); # Skip blank lines
+
+    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\s*\((.+)\)\;/;
+    my @parms = split (/,/, $parms);
+
+    my @vars  = ();
+    my @types = ();
+    my %output = ();
+    foreach $parm (@parms) {
+
+      my ($varname) = ($parm =~ /(\w+)$/);
+      $parm =~ s/$varname//; # parm now contains the full C type
+      $output{$varname} = 1 if (($parm =~ /\*/) && ($parm !~ /const/));
+      $parm =~ s/const //;  # get rid of 'const' in C type
+      $parm =~ s/^\s+//;
+      $parm =~ s/\s+$//;    # pare off the variable type from 'parm'
+      
+      push (@vars, $varname);
+      push (@types, $parm);
+
+    }
+
+    my $xsout = '';
+    $xsout .= "$return_type\n";
+    $xsout .= "$func_name (" . join (", ", @vars) . ")\n";
+    for (my $i=0;$i<@vars;$i++) {
+      $xsout .= "\t$types[$i]\t$vars[$i]\n";
+    }
+    
+    $xsout .= "CODE:\n";
+    $xsout .= "\tRETVAL = $func_name (";
+    for (my $i=0;$i<@vars;$i++) {
+      if ($types[$i] =~ /PDL/) {
+	($type = $types[$i]) =~ s/PDL//; # Get rid of PDL type when writine xs CODE section
+	$xsout .= "($type)$vars[$i]"."->data,";
+      } else {
+	$xsout .= "$vars[$i],";
+      }
+    }
+    chop ($xsout);  # remove last comma
+    $xsout .= ");\n";
+    $xsout .= "OUTPUT:\n";
+    $xsout .= "\tRETVAL\n";
+    foreach $var (keys %output) {
+      $xsout .= "\t$var\n";
+    }
+    $xsout .= "\n\n";
+
+    pp_addxs ('', $xsout);
+
+  }
+
+}
+
+
+#-------------------------------------------------------------------------
+# Create low level interface from edited hdr5 header file.
+#-------------------------------------------------------------------------
+
+create_low_level (<<'EODEF');
+# HDF5 Functions we create an interface to using the perl XS code
+#
+
+hid_t H5Fcreate (const char *name, unsigned flags, hid_t create_id, hid_t access_id); 
+hid_t H5Fopen (const char *name, unsigned flags, hid_t access_id); 
+herr_t H5Fclose (hid_t file_id); 
+hid_t H5Screate_simple (int rank, const hsize_t * dims,  const hsize_t * maxdims);
+herr_t H5Sclose(hid_t space_id); 
+hid_t H5Dcreate (hid_t loc_id, const char *name, hid_t type_id,  hid_t space_id, hid_t create_plist_id); 
+hid_t H5Dopen (hid_t loc_id, const char *name);
+herr_t H5Dwrite (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, const void * buf);
+herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, void * buf);
+hid_t H5Dclose (hid_t dataset_id);
+hid_t H5Acreate (hid_t loc_id, const char *name, hid_t type_id, hid_t space_id, hid_t create_plist); 
+herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, void *buf);
+
+EODEF
+
+
+# Add Optional HDF Constants to export list.
+
+pp_add_exported('', <<'EOPM');
+	H5F_ACC_DEBUG
+	H5F_ACC_EXCL
+	H5F_ACC_RDONLY
+	H5F_ACC_RDWR
+	H5F_ACC_TRUNC
+	H5P_DEFAULT
+	H5S_ALL
+	H5S_UNLIMITED
+	H5T_ALPHA_B16
+	H5T_ALPHA_B32
+	H5T_ALPHA_B64
+	H5T_ALPHA_B8
+	H5T_ALPHA_F32
+	H5T_ALPHA_F64
+	H5T_ALPHA_I16
+	H5T_ALPHA_I32
+	H5T_ALPHA_I64
+	H5T_ALPHA_I8
+	H5T_ALPHA_U16
+	H5T_ALPHA_U32
+	H5T_ALPHA_U64
+	H5T_ALPHA_U8
+	H5T_C_S1
+	H5T_FORTRAN_S1
+	H5T_IEEE_F32BE
+	H5T_IEEE_F32LE
+	H5T_IEEE_F64BE
+	H5T_IEEE_F64LE
+	H5T_INTEL_B16
+	H5T_INTEL_B32
+	H5T_INTEL_B64
+	H5T_INTEL_B8
+	H5T_INTEL_F32
+	H5T_INTEL_F64
+	H5T_INTEL_I16
+	H5T_INTEL_I32
+	H5T_INTEL_I64
+	H5T_INTEL_I8
+	H5T_INTEL_U16
+	H5T_INTEL_U32
+	H5T_INTEL_U64
+	H5T_INTEL_U8
+	H5T_MIPS_B16
+	H5T_MIPS_B32
+	H5T_MIPS_B64
+	H5T_MIPS_B8
+	H5T_MIPS_F32
+	H5T_MIPS_F64
+	H5T_MIPS_I16
+	H5T_MIPS_I32
+	H5T_MIPS_I64
+	H5T_MIPS_I8
+	H5T_MIPS_U16
+	H5T_MIPS_U32
+	H5T_MIPS_U64
+	H5T_MIPS_U8
+	H5T_NATIVE_B16
+	H5T_NATIVE_B32
+	H5T_NATIVE_B64
+	H5T_NATIVE_B8
+	H5T_NATIVE_CHAR
+	H5T_NATIVE_DOUBLE
+	H5T_NATIVE_FLOAT
+	H5T_NATIVE_HBOOL
+	H5T_NATIVE_HERR
+	H5T_NATIVE_HSIZE
+	H5T_NATIVE_HSSIZE
+	H5T_NATIVE_INT
+	H5T_NATIVE_INT16
+	H5T_NATIVE_INT32
+	H5T_NATIVE_INT64
+	H5T_NATIVE_INT8
+	H5T_NATIVE_INT_FAST16
+	H5T_NATIVE_INT_FAST32
+	H5T_NATIVE_INT_FAST64
+	H5T_NATIVE_INT_FAST8
+	H5T_NATIVE_INT_LEAST16
+	H5T_NATIVE_INT_LEAST32
+	H5T_NATIVE_INT_LEAST64
+	H5T_NATIVE_INT_LEAST8
+	H5T_NATIVE_LDOUBLE
+	H5T_NATIVE_LLONG
+	H5T_NATIVE_LONG
+	H5T_NATIVE_OPAQUE
+	H5T_NATIVE_SCHAR
+	H5T_NATIVE_SHORT
+	H5T_NATIVE_UCHAR
+	H5T_NATIVE_UINT
+	H5T_NATIVE_UINT16
+	H5T_NATIVE_UINT32
+	H5T_NATIVE_UINT64
+	H5T_NATIVE_UINT8
+	H5T_NATIVE_UINT_FAST16
+	H5T_NATIVE_UINT_FAST32
+	H5T_NATIVE_UINT_FAST64
+	H5T_NATIVE_UINT_FAST8
+	H5T_NATIVE_UINT_LEAST16
+	H5T_NATIVE_UINT_LEAST32
+	H5T_NATIVE_UINT_LEAST64
+	H5T_NATIVE_UINT_LEAST8
+	H5T_NATIVE_ULLONG
+	H5T_NATIVE_ULONG
+	H5T_NATIVE_USHORT
+	H5T_STD_B16BE
+	H5T_STD_B16LE
+	H5T_STD_B32BE
+	H5T_STD_B32LE
+	H5T_STD_B64BE
+	H5T_STD_B64LE
+	H5T_STD_B8BE
+	H5T_STD_B8LE
+	H5T_STD_I16BE
+	H5T_STD_I16LE
+	H5T_STD_I32BE
+	H5T_STD_I32LE
+	H5T_STD_I64BE
+	H5T_STD_I64LE
+	H5T_STD_I8BE
+	H5T_STD_I8LE
+	H5T_STD_REF_DSETREG
+	H5T_STD_REF_OBJ
+	H5T_STD_U16BE
+	H5T_STD_U16LE
+	H5T_STD_U32BE
+	H5T_STD_U32LE
+	H5T_STD_U64BE
+	H5T_STD_U64LE
+	H5T_STD_U8BE
+	H5T_STD_U8LE
+	H5T_UNIX_D32BE
+	H5T_UNIX_D32LE
+	H5T_UNIX_D64BE
+	H5T_UNIX_D64LE
+EOPM
+
+###############################################################
+# XS Code that implements the HDF constants 
+#  Using the AUTOLOAD routine, any calls to hdf5 constants, like 
+#  H5F_ACC_RDONLY will call the 'constant' routine here and return
+#   the value of the #defined'ed H5F_ACC_RDONLY
+
+pp_addhdr(<<'EOXS');
+
+/* ############################################################### 
+#
+#  Functions to handle interfacing HDF5 constants with perl
+#
+#   This originally generated using h2xs and manually editing
+#
+*/ 
+static int
+not_here(s)
+char *s;
+{
+    croak("%s not implemented on this architecture", s);
+    return -1;
+}
+
+double 
+constant(name, arg)
+char *name;
+int arg;
+{
+    errno = 0;
+    switch (*name) {
+    case 'A':
+	break;
+    case 'B':
+	break;
+    case 'C':
+	break;
+    case 'D':
+	break;
+    case 'E':
+	break;
+    case 'F':
+	break;
+    case 'G':
+	break;
+    case 'H':
+	if (strEQ(name, "H5F_ACC_DEBUG"))
+#ifdef H5F_ACC_DEBUG
+	    return H5F_ACC_DEBUG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5F_ACC_EXCL"))
+#ifdef H5F_ACC_EXCL
+	    return H5F_ACC_EXCL;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5F_ACC_RDONLY"))
+#ifdef H5F_ACC_RDONLY
+	    return H5F_ACC_RDONLY;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5F_ACC_RDWR"))
+#ifdef H5F_ACC_RDWR
+	    return H5F_ACC_RDWR;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5F_ACC_TRUNC"))
+#ifdef H5F_ACC_TRUNC
+	    return H5F_ACC_TRUNC;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5P_DEFAULT"))
+#ifdef H5P_DEFAULT
+	    return H5P_DEFAULT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5S_ALL"))
+#ifdef H5S_ALL
+	    return H5S_ALL;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5S_UNLIMITED"))
+#ifdef H5S_UNLIMITED
+	    return H5S_UNLIMITED;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_B16"))
+#ifdef H5T_ALPHA_B16
+	    return H5T_ALPHA_B16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_B32"))
+#ifdef H5T_ALPHA_B32
+	    return H5T_ALPHA_B32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_B64"))
+#ifdef H5T_ALPHA_B64
+	    return H5T_ALPHA_B64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_B8"))
+#ifdef H5T_ALPHA_B8
+	    return H5T_ALPHA_B8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_F32"))
+#ifdef H5T_ALPHA_F32
+	    return H5T_ALPHA_F32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_F64"))
+#ifdef H5T_ALPHA_F64
+	    return H5T_ALPHA_F64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_I16"))
+#ifdef H5T_ALPHA_I16
+	    return H5T_ALPHA_I16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_I32"))
+#ifdef H5T_ALPHA_I32
+	    return H5T_ALPHA_I32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_I64"))
+#ifdef H5T_ALPHA_I64
+	    return H5T_ALPHA_I64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_I8"))
+#ifdef H5T_ALPHA_I8
+	    return H5T_ALPHA_I8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_U16"))
+#ifdef H5T_ALPHA_U16
+	    return H5T_ALPHA_U16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_U32"))
+#ifdef H5T_ALPHA_U32
+	    return H5T_ALPHA_U32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_U64"))
+#ifdef H5T_ALPHA_U64
+	    return H5T_ALPHA_U64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_ALPHA_U8"))
+#ifdef H5T_ALPHA_U8
+	    return H5T_ALPHA_U8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_C_S1"))
+#ifdef H5T_C_S1
+	    return H5T_C_S1;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_FORTRAN_S1"))
+#ifdef H5T_FORTRAN_S1
+	    return H5T_FORTRAN_S1;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_IEEE_F32BE"))
+#ifdef H5T_IEEE_F32BE
+	    return H5T_IEEE_F32BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_IEEE_F32LE"))
+#ifdef H5T_IEEE_F32LE
+	    return H5T_IEEE_F32LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_IEEE_F64BE"))
+#ifdef H5T_IEEE_F64BE
+	    return H5T_IEEE_F64BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_IEEE_F64LE"))
+#ifdef H5T_IEEE_F64LE
+	    return H5T_IEEE_F64LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_B16"))
+#ifdef H5T_INTEL_B16
+	    return H5T_INTEL_B16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_B32"))
+#ifdef H5T_INTEL_B32
+	    return H5T_INTEL_B32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_B64"))
+#ifdef H5T_INTEL_B64
+	    return H5T_INTEL_B64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_B8"))
+#ifdef H5T_INTEL_B8
+	    return H5T_INTEL_B8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_F32"))
+#ifdef H5T_INTEL_F32
+	    return H5T_INTEL_F32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_F64"))
+#ifdef H5T_INTEL_F64
+	    return H5T_INTEL_F64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_I16"))
+#ifdef H5T_INTEL_I16
+	    return H5T_INTEL_I16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_I32"))
+#ifdef H5T_INTEL_I32
+	    return H5T_INTEL_I32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_I64"))
+#ifdef H5T_INTEL_I64
+	    return H5T_INTEL_I64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_I8"))
+#ifdef H5T_INTEL_I8
+	    return H5T_INTEL_I8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_U16"))
+#ifdef H5T_INTEL_U16
+	    return H5T_INTEL_U16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_U32"))
+#ifdef H5T_INTEL_U32
+	    return H5T_INTEL_U32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_U64"))
+#ifdef H5T_INTEL_U64
+	    return H5T_INTEL_U64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_INTEL_U8"))
+#ifdef H5T_INTEL_U8
+	    return H5T_INTEL_U8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_B16"))
+#ifdef H5T_MIPS_B16
+	    return H5T_MIPS_B16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_B32"))
+#ifdef H5T_MIPS_B32
+	    return H5T_MIPS_B32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_B64"))
+#ifdef H5T_MIPS_B64
+	    return H5T_MIPS_B64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_B8"))
+#ifdef H5T_MIPS_B8
+	    return H5T_MIPS_B8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_F32"))
+#ifdef H5T_MIPS_F32
+	    return H5T_MIPS_F32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_F64"))
+#ifdef H5T_MIPS_F64
+	    return H5T_MIPS_F64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_I16"))
+#ifdef H5T_MIPS_I16
+	    return H5T_MIPS_I16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_I32"))
+#ifdef H5T_MIPS_I32
+	    return H5T_MIPS_I32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_I64"))
+#ifdef H5T_MIPS_I64
+	    return H5T_MIPS_I64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_I8"))
+#ifdef H5T_MIPS_I8
+	    return H5T_MIPS_I8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_U16"))
+#ifdef H5T_MIPS_U16
+	    return H5T_MIPS_U16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_U32"))
+#ifdef H5T_MIPS_U32
+	    return H5T_MIPS_U32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_U64"))
+#ifdef H5T_MIPS_U64
+	    return H5T_MIPS_U64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_MIPS_U8"))
+#ifdef H5T_MIPS_U8
+	    return H5T_MIPS_U8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_B16"))
+#ifdef H5T_NATIVE_B16
+	    return H5T_NATIVE_B16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_B32"))
+#ifdef H5T_NATIVE_B32
+	    return H5T_NATIVE_B32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_B64"))
+#ifdef H5T_NATIVE_B64
+	    return H5T_NATIVE_B64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_B8"))
+#ifdef H5T_NATIVE_B8
+	    return H5T_NATIVE_B8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_CHAR"))
+#ifdef H5T_NATIVE_CHAR
+	    return H5T_NATIVE_CHAR;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_DOUBLE"))
+#ifdef H5T_NATIVE_DOUBLE
+	    return H5T_NATIVE_DOUBLE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_FLOAT"))
+#ifdef H5T_NATIVE_FLOAT
+	    return H5T_NATIVE_FLOAT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_HBOOL"))
+#ifdef H5T_NATIVE_HBOOL
+	    return H5T_NATIVE_HBOOL;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_HERR"))
+#ifdef H5T_NATIVE_HERR
+	    return H5T_NATIVE_HERR;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_HSIZE"))
+#ifdef H5T_NATIVE_HSIZE
+	    return H5T_NATIVE_HSIZE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_HSSIZE"))
+#ifdef H5T_NATIVE_HSSIZE
+	    return H5T_NATIVE_HSSIZE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT"))
+#ifdef H5T_NATIVE_INT
+	    return H5T_NATIVE_INT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT16"))
+#ifdef H5T_NATIVE_INT16
+	    return H5T_NATIVE_INT16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT32"))
+#ifdef H5T_NATIVE_INT32
+	    return H5T_NATIVE_INT32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT64"))
+#ifdef H5T_NATIVE_INT64
+	    return H5T_NATIVE_INT64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT8"))
+#ifdef H5T_NATIVE_INT8
+	    return H5T_NATIVE_INT8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_FAST16"))
+#ifdef H5T_NATIVE_INT_FAST16
+	    return H5T_NATIVE_INT_FAST16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_FAST32"))
+#ifdef H5T_NATIVE_INT_FAST32
+	    return H5T_NATIVE_INT_FAST32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_FAST64"))
+#ifdef H5T_NATIVE_INT_FAST64
+	    return H5T_NATIVE_INT_FAST64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_FAST8"))
+#ifdef H5T_NATIVE_INT_FAST8
+	    return H5T_NATIVE_INT_FAST8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_LEAST16"))
+#ifdef H5T_NATIVE_INT_LEAST16
+	    return H5T_NATIVE_INT_LEAST16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_LEAST32"))
+#ifdef H5T_NATIVE_INT_LEAST32
+	    return H5T_NATIVE_INT_LEAST32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_LEAST64"))
+#ifdef H5T_NATIVE_INT_LEAST64
+	    return H5T_NATIVE_INT_LEAST64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_INT_LEAST8"))
+#ifdef H5T_NATIVE_INT_LEAST8
+	    return H5T_NATIVE_INT_LEAST8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_LDOUBLE"))
+#ifdef H5T_NATIVE_LDOUBLE
+	    return H5T_NATIVE_LDOUBLE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_LLONG"))
+#ifdef H5T_NATIVE_LLONG
+	    return H5T_NATIVE_LLONG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_LONG"))
+#ifdef H5T_NATIVE_LONG
+	    return H5T_NATIVE_LONG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_OPAQUE"))
+#ifdef H5T_NATIVE_OPAQUE
+	    return H5T_NATIVE_OPAQUE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_SCHAR"))
+#ifdef H5T_NATIVE_SCHAR
+	    return H5T_NATIVE_SCHAR;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_SHORT"))
+#ifdef H5T_NATIVE_SHORT
+	    return H5T_NATIVE_SHORT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UCHAR"))
+#ifdef H5T_NATIVE_UCHAR
+	    return H5T_NATIVE_UCHAR;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT"))
+#ifdef H5T_NATIVE_UINT
+	    return H5T_NATIVE_UINT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT16"))
+#ifdef H5T_NATIVE_UINT16
+	    return H5T_NATIVE_UINT16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT32"))
+#ifdef H5T_NATIVE_UINT32
+	    return H5T_NATIVE_UINT32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT64"))
+#ifdef H5T_NATIVE_UINT64
+	    return H5T_NATIVE_UINT64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT8"))
+#ifdef H5T_NATIVE_UINT8
+	    return H5T_NATIVE_UINT8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_FAST16"))
+#ifdef H5T_NATIVE_UINT_FAST16
+	    return H5T_NATIVE_UINT_FAST16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_FAST32"))
+#ifdef H5T_NATIVE_UINT_FAST32
+	    return H5T_NATIVE_UINT_FAST32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_FAST64"))
+#ifdef H5T_NATIVE_UINT_FAST64
+	    return H5T_NATIVE_UINT_FAST64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_FAST8"))
+#ifdef H5T_NATIVE_UINT_FAST8
+	    return H5T_NATIVE_UINT_FAST8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_LEAST16"))
+#ifdef H5T_NATIVE_UINT_LEAST16
+	    return H5T_NATIVE_UINT_LEAST16;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_LEAST32"))
+#ifdef H5T_NATIVE_UINT_LEAST32
+	    return H5T_NATIVE_UINT_LEAST32;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_LEAST64"))
+#ifdef H5T_NATIVE_UINT_LEAST64
+	    return H5T_NATIVE_UINT_LEAST64;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_UINT_LEAST8"))
+#ifdef H5T_NATIVE_UINT_LEAST8
+	    return H5T_NATIVE_UINT_LEAST8;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_ULLONG"))
+#ifdef H5T_NATIVE_ULLONG
+	    return H5T_NATIVE_ULLONG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_ULONG"))
+#ifdef H5T_NATIVE_ULONG
+	    return H5T_NATIVE_ULONG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_NATIVE_USHORT"))
+#ifdef H5T_NATIVE_USHORT
+	    return H5T_NATIVE_USHORT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B16BE"))
+#ifdef H5T_STD_B16BE
+	    return H5T_STD_B16BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B16LE"))
+#ifdef H5T_STD_B16LE
+	    return H5T_STD_B16LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B32BE"))
+#ifdef H5T_STD_B32BE
+	    return H5T_STD_B32BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B32LE"))
+#ifdef H5T_STD_B32LE
+	    return H5T_STD_B32LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B64BE"))
+#ifdef H5T_STD_B64BE
+	    return H5T_STD_B64BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B64LE"))
+#ifdef H5T_STD_B64LE
+	    return H5T_STD_B64LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B8BE"))
+#ifdef H5T_STD_B8BE
+	    return H5T_STD_B8BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_B8LE"))
+#ifdef H5T_STD_B8LE
+	    return H5T_STD_B8LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I16BE"))
+#ifdef H5T_STD_I16BE
+	    return H5T_STD_I16BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I16LE"))
+#ifdef H5T_STD_I16LE
+	    return H5T_STD_I16LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I32BE"))
+#ifdef H5T_STD_I32BE
+	    return H5T_STD_I32BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I32LE"))
+#ifdef H5T_STD_I32LE
+	    return H5T_STD_I32LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I64BE"))
+#ifdef H5T_STD_I64BE
+	    return H5T_STD_I64BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I64LE"))
+#ifdef H5T_STD_I64LE
+	    return H5T_STD_I64LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I8BE"))
+#ifdef H5T_STD_I8BE
+	    return H5T_STD_I8BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_I8LE"))
+#ifdef H5T_STD_I8LE
+	    return H5T_STD_I8LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_REF_DSETREG"))
+#ifdef H5T_STD_REF_DSETREG
+	    return H5T_STD_REF_DSETREG;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_REF_OBJ"))
+#ifdef H5T_STD_REF_OBJ
+	    return H5T_STD_REF_OBJ;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U16BE"))
+#ifdef H5T_STD_U16BE
+	    return H5T_STD_U16BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U16LE"))
+#ifdef H5T_STD_U16LE
+	    return H5T_STD_U16LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U32BE"))
+#ifdef H5T_STD_U32BE
+	    return H5T_STD_U32BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U32LE"))
+#ifdef H5T_STD_U32LE
+	    return H5T_STD_U32LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U64BE"))
+#ifdef H5T_STD_U64BE
+	    return H5T_STD_U64BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U64LE"))
+#ifdef H5T_STD_U64LE
+	    return H5T_STD_U64LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U8BE"))
+#ifdef H5T_STD_U8BE
+	    return H5T_STD_U8BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_STD_U8LE"))
+#ifdef H5T_STD_U8LE
+	    return H5T_STD_U8LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_UNIX_D32BE"))
+#ifdef H5T_UNIX_D32BE
+	    return H5T_UNIX_D32BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_UNIX_D32LE"))
+#ifdef H5T_UNIX_D32LE
+	    return H5T_UNIX_D32LE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_UNIX_D64BE"))
+#ifdef H5T_UNIX_D64BE
+	    return H5T_UNIX_D64BE;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5T_UNIX_D64LE"))
+#ifdef H5T_UNIX_D64LE
+	    return H5T_UNIX_D64LE;
+#else
+	    goto not_there;
+#endif
+	break;
+    case 'I':
+	break;
+    case 'J':
+	break;
+    case 'K':
+	break;
+    case 'L':
+	break;
+    case 'M':
+	break;
+    case 'N':
+	break;
+    case 'O':
+	break;
+    case 'P':
+	break;
+    case 'Q':
+	break;
+    case 'R':
+	break;
+    case 'S':
+	break;
+    case 'T':
+	break;
+    case 'U':
+	break;
+    case 'V':
+	break;
+    case 'W':
+	break;
+    case 'X':
+	break;
+    case 'Y':
+	break;
+    case 'Z':
+	break;
+    }
+    errno = EINVAL;
+    return 0;
+
+not_there:
+    errno = ENOENT;
+    return 0;
+}
+
+/* ############################################################# */
+EOXS
+
+pp_addxs('',<<'EOXS');
+
+double
+constant(name,arg)
+	char *		name
+	int		arg
+EOXS
+############### Add Autoload Routine for the hdf5 constants ##########
+
+pp_addpm( {At => Top}, <<'EOPM');
+
+
+
+use Carp;
+
+sub AUTOLOAD {
+    # This AUTOLOAD is used to 'autoload' constants from the constant()
+    # XS function.  If a constant is not found then control is passed
+    # to the AUTOLOAD in AutoLoader.
+
+    my $constname;
+    ($constname = $AUTOLOAD) =~ s/.*:://;
+    croak "& not defined" if $constname eq 'constant';
+    my $val = constant($constname, @_ ? $_[0] : 0);
+    if ($! != 0) {
+	if ($! =~ /Invalid/) {
+	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
+	    goto &AutoLoader::AUTOLOAD;
+	}
+	else {
+		croak "Your vendor has not defined hdf5 macro $constname";
+	}
+    }
+    *$AUTOLOAD = sub { $val };
+    goto &$AUTOLOAD;
+}
+EOPM
+
+
+pp_done();

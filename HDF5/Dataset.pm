@@ -333,7 +333,7 @@ map it to the default PDL type PDL_D.
 	 PDL::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
 );
 
-
+$H5T_STRING = PDL::HDF5::H5T_STRING();  #HDF5 string type
 
 sub get{
 
@@ -345,6 +345,13 @@ sub get{
 	my $groupID = $self->{groupID};
 	my $datasetID = $self->{datasetID};
 	my $name = $self->{name};
+	my $stringSize;  		# String size, if we are retrieving a string type
+	my $PDLtype;     		# PDL type that the data will be mapped to
+	my $internalhdf5_type; 		# Type that represents how HDF5 will store the data in memory (after retreiving from
+					#  the file)
+
+	my $ReturnType = 'PDL';	        # Default object returned is PDL. If strings are store, then this will
+					# return PDL::Char
 
 	# Get the HDF5 file datatype;
         my $HDF5type = PDL::HDF5::H5Dget_type($datasetID );
@@ -353,19 +360,36 @@ sub get{
 		return undef;
 	}
 
-	# Map the HDF5 file datatype to a PDL datatype
-	my $PDLtype = $PDL::Types::PDL_D; # Default type is double
-	if( defined($HDF5toPDLfileMapping{$HDF5type}) ){
-		$PDLtype = $HDF5toPDLfileMapping{$HDF5type};
-	}
+	# Check for string type:
+	if( PDL::HDF5::H5Tget_class($HDF5type ) == $H5T_STRING ){  # String type
 
-	# Get the HDF5 internal datatype that corresponds to the PDL type
-	unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){
-		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
-		return undef;
-	}
-	my $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
+		$stringSize = PDL::HDF5::H5Tget_size($HDF5type);
+		unless( $stringSize >= 0 ){
+			carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 String Datatype Size.\n";
+			carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+			return undef;
+		}
 
+		$PDLtype = $PDL::Types::PDL_B; 
+		$internalhdf5_type =  $HDF5type; # internal storage the same as the file storage.
+
+		$ReturnType = 'PDL::Char';	 # For strings, we return a PDL::Char
+
+	}
+	else{  # Normal Numeric Type
+		# Map the HDF5 file datatype to a PDL datatype
+		$PDLtype = $PDL::Types::PDL_D; # Default type is double
+		if( defined($HDF5toPDLfileMapping{$HDF5type}) ){
+			$PDLtype = $HDF5toPDLfileMapping{$HDF5type};
+		}
+	
+		# Get the HDF5 internal datatype that corresponds to the PDL type
+		unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){
+			carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+			return undef;
+		}
+		$internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
+	}
 
 	my $dataspaceID = PDL::HDF5::H5Dget_space($datasetID);
 	if( $dataspaceID < 0 ){
@@ -401,12 +425,22 @@ sub get{
 
 	@dims = PDL::HDF5::unpackList($dims); # get the dim sizes from the binary structure
 
-	$pdl = PDL->null;
+	$pdl = $ReturnType->null;
 	$pdl->set_datatype($PDLtype);
-	$pdl->setdims([reverse @dims]);  # HDF5 stores columns/rows in reverse order than pdl
+	my @pdldims;  # dims of the PDL
+	if( defined( $stringSize )){  # String types
+		
+		@pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
+							      #  1st PDL dim is the string length (for PDL::Char)
+	}
+	else{ # Normal Numeric types
+		@pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl,
+	}
+
+	$pdl->setdims(\@pdldims);
 
 	my $nelems = 1;
-	foreach (@dims){ $nelems *= $_; }; # calculate the number of elements
+	foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
 
 	my $datasize = $nelems * PDL::howbig($pdl->get_datatype);
 	my $data = pack("x$datasize"); # create empty space for the data

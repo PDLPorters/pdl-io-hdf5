@@ -728,6 +728,8 @@ herr_t H5Tset_size(hid_t type_id, size_t size);
 herr_t H5Tclose(hid_t type_id);
 hid_t H5Tcopy(hid_t type_id);
 size_t H5Tget_size(hid_t type_id);
+# hid_t H5Tget_super(hid_t type);
+H5T_class_t H5Tget_class(hid_t type_id);
 
 EODEF
 
@@ -864,6 +866,7 @@ pp_add_exported('', <<'EOPM');
 	H5T_STD_U64LE
 	H5T_STD_U8BE
 	H5T_STD_U8LE
+	H5T_STRING
 	H5T_UNIX_D32BE
 	H5T_UNIX_D32LE
 	H5T_UNIX_D64BE
@@ -1690,6 +1693,8 @@ int arg;
 #else
 	    goto not_there;
 #endif
+	if (strEQ(name, "H5T_STRING"))
+	    return H5T_STRING; /* This was manually enter to get the enumerated type */
 	if (strEQ(name, "H5T_STD_B16BE"))
 #ifdef H5T_STD_B16BE
 	    return H5T_STD_B16BE;

@@ -269,7 +269,7 @@ sub create_low_level {
     next if (/^\#/);  # Skip commented out lines
     next if (/^\s*$/); # Skip blank lines
 
-    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\s*\((.*)\)\;/;
+    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\s*\((.*?)\)\;/;
     my @parms = split (/,/, $parms);
 
     my @vars  = ();
@@ -278,7 +278,7 @@ sub create_low_level {
     foreach $parm (@parms) {
 
       my ($varname) = ($parm =~ /(\w+)$/);
-      $parm =~ s/$varname//; # parm now contains the full C type
+      $parm =~ s/$varname$//; # parm now contains the full C type
       $output{$varname} = 1 if (($parm =~ /\*/) && ($parm !~ /const/));
       $parm =~ s/const //;  # get rid of 'const' in C type
       $parm =~ s/^\s+//;
@@ -344,14 +344,25 @@ hid_t H5Dopen (hid_t loc_id, const char *name);
 herr_t H5Dwrite (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, const void * buf);
 herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, void * buf);
 hid_t H5Dclose (hid_t dataset_id);
-hid_t H5Acreate (hid_t loc_id, const char *name, hid_t type_id, hid_t space_id, hid_t create_plist); 
-herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, void *buf);
 hid_t H5Gcreate(hid_t loc_id, const char *name, size_t size_hint);
 hid_t H5Gopen(hid_t loc_id, const char *name);
 herr_t H5Gclose(hid_t group_id);
 herr_t H5Gget_objinfo(hid_t loc_id, const char *name, hbool_t follow_link, const void *statbuf);
 herr_t H5errorOn();
 herr_t H5errorOff();
+#
+# Attribute Functions
+hid_t H5Aopen_name(hid_t loc_id, const char *name);
+hid_t H5Acreate(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id, hid_t create_plist);
+# attrib write only supports char buffer right now
+herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, char * buf);
+herr_t H5Adelete(hid_t loc_id, const char * name);
+herr_t H5Aclose(hid_t attr_id);
+
+# Type Functions:
+herr_t H5Tset_size(hid_t type_id, size_t size);
+herr_t H5Tclose(hid_t type_id);
+hid_t H5Tcopy(hid_t type_id);
 
 EODEF
 

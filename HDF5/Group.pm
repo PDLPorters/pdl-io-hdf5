@@ -143,6 +143,91 @@ sub DESTROY {
 
 }
 
+=head2 attrset
+
+=for ref
+
+Set the value of an attribute(s)
+
+Currently the only attribute types supported are null-terminated strings.
+
+B<Usage:>
+
+=for usage
+
+   $group->attrset( 'attr1' => 'attr1Value',
+   		    'attr2' => 'attr2 value', 
+		    .
+		    .
+		    .
+		   );
+
+Returns undef on failure, 1 on success.
+
+=cut
+
+sub attrset {
+	my $self = shift;
+
+	my %attrs = @_; # get atribute hash
+	
+	my $groupID = $self->{groupID};
+	
+	my($key,$value);
+
+	my $typeID; # id used for attribute
+	my $dataspaceID; # id used for the attribute dataspace
+	
+	my $attrID;
+	foreach $key( sort keys %attrs){
+		
+		$value = $attrs{$key};
+		
+		# Create Null-Terminated String Type 
+		$typeID = PDL::HDF5::H5Tcopy(PDL::HDF5::H5T_C_S1());
+		PDL::HDF5::H5Tset_size($typeID, length($value)); # make legth of type eaual to length of $value
+		$dataspaceID = PDL::HDF5::H5Screate_simple(0, 0, 0);
+
+		#Note: If a attr already exists, then it will be deleted an re-written
+		# Delete the attribute first
+		PDL::HDF5::H5errorOff();  # keep h5 lib from complaining
+		PDL::HDF5::H5Adelete($groupID, $key);
+		PDL::HDF5::H5errorOn();
+
+		
+		$attrID = PDL::HDF5::H5Acreate($groupID, $key, $typeID, $dataspaceID, PDL::HDF5::H5P_DEFAULT());
+
+		if($attrID < 0 ){
+			carp "Error in ".__PACKAGE__." attrset; Can't create attribute '$key'\n";
+
+			PDL::HDF5::H5Sclose($dataspaceID);
+			PDL::HDF5::H5Tclose($typeID); # Cleanup
+			return undef;
+		}
+		
+		# Write the attribute data.
+		if( PDL::HDF5::H5Awrite($attrID, $typeID, $value) < 0){
+			carp "Error in ".__PACKAGE__." attrset; Can't write attribute '$key'\n";
+			PDL::HDF5::H5Aclose($attrID);
+			PDL::HDF5::H5Sclose($dataspaceID);
+			PDL::HDF5::H5Tclose($typeID); # Cleanup
+			return undef;
+		}
+		
+		# Cleanup
+		PDL::HDF5::H5Aclose($attrID);
+		PDL::HDF5::H5Sclose($dataspaceID);
+		PDL::HDF5::H5Tclose($typeID);
+
+			
+	}
+	
+	return 1;
+  
+}
+
+
+
 
 1;
 

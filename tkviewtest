@@ -1,0 +1,14 @@
+
+ use Tk;
+ use PDL::HDF5::tkview;
+ use PDL::HDF5;
+
+ my $mw = MainWindow->new;
+
+ 
+ my $h5 = new PDL::HDF5('newFile.hd5');  # open HDF5 file object
+
+ my $tkview = new PDL::HDF5::tkview( $mw, $h5);
+ 
+ MainLoop;
+

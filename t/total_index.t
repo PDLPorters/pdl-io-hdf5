@@ -44,7 +44,7 @@ q!$VAR1 = {
         };
 !;
 
-# print $result;
+#print $result;
 ok($testNo++,$baseline eq $result );
 
 my @values = $hdfobj->allAttrValues('attr1');

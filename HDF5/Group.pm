@@ -37,6 +37,10 @@ ID (fileID or groupID) of the HDF file/group that owns this group.
 
 Name of the HDF file or group that owns this group
 
+=item fileObj
+
+Ref to the L<PDL::HDF5> object that owns this object.
+
 =back
 
 =head1 METHODS
@@ -56,11 +60,13 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Group( groupName => $name, parentName => $parentName, parentID => $parentID );
+   $a = new PDL::HDF5:Group( groupName => $name, parentName => $parentName,
+   			     parentID => $parentID, fileObj => $fileObj );
 	Args:
 	$name				Name of the group (relative to the parent)
 	$parentName			Filename that owns this group
 	$parentID			FileID of the file that owns this group
+	$fileObj                        PDL::HDF object that owns this group.
 
 =cut
 
@@ -70,7 +76,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( groupName parentName parentID );
+	my @DataMembers = qw( groupName parentName parentID fileObj);
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -78,10 +84,6 @@ sub new{
 	foreach $varName(keys %parms){
  		unless( defined($DataMembers{$varName})){
 			carp("Error Calling ".__PACKAGE__." Constuctor\n  \'$varName\' not a valid data member\n"); 
-			return undef;
-		}
- 		unless( defined($parms{$varName})){
-			carp("Error Calling ".__PACKAGE__." Constuctor\n  \'$varName\' not supplied\n"); 
 			return undef;
 		}
 		$self->{$varName} = $parms{$varName};
@@ -108,6 +110,10 @@ sub new{
 	}
 	else{  # group didn't exist, create it:
 		$groupID = PDL::HDF5::H5Gcreate($parentID, $groupName, 0);
+		# Clear-out the attribute index, it is no longer valid with the updates
+		#  we just made.
+		$self->{fileObj}->clearAttrIndex;
+
 	}
 	# Try Opening the Group First (Assume it already exists)
 
@@ -227,6 +233,9 @@ sub attrSet {
 
 			
 	}
+	# Clear-out the attribute index, it is no longer valid with the updates
+	#  we just made.
+	$self->{fileObj}->clearAttrIndex;
 	
 	return 1;
   
@@ -397,6 +406,9 @@ sub attrDel {
 		}
 		
 	}
+	# Clear-out the attribute index, it is no longer valid with the updates
+	#  we just made.
+	$self->{fileObj}->clearAttrIndex;
 	
 	return 1;
   
@@ -497,7 +509,7 @@ sub dataset {
 	my $groupName = $self->{groupName};
 	
 	my $dataset = PDL::HDF5::Dataset->new( name=> $name, groupName => $groupName,
-					groupID => $groupID );
+					groupID => $groupID, fileObj => $self->{fileObj} );
 
 }
 
@@ -557,7 +569,10 @@ sub group {
 	my $parentName = $self->{groupName};
 	
 	my $group =  new PDL::HDF5::Group( groupName=> $name, parentName => $parentName,
-					parentID => $parentID );
+					parentID => $parentID, fileObj => $self->{fileObj}  );
+					
+
+	return $group;
 
 }
 

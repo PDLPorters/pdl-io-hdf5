@@ -36,6 +36,11 @@ groupID of the HDF file that owns this dataset.
 
 group Name of the HDF file that owns this dataset.
 
+=item fileObj
+
+Ref to the L<PDL::HDF5> object that owns this object.
+
+
 =back
 
 =head1 METHODS
@@ -55,11 +60,15 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Dataset( name => $name, groupName => $groupName, groupID => $groupID );
+   $a = new PDL::HDF5:Dataset( name => $name, groupName => $groupName, 
+   				groupID => $groupID, fileObj => $fileObj);
 	Args:
 	$name				Name of the dataset
 	$groupName			Filename that owns this group
 	$groupID			groupID of the file that owns this group
+	$fileObj                        PDL::HDF object that owns this group.
+
+
 
 =cut
 
@@ -69,7 +78,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( name groupName groupID );
+	my @DataMembers = qw( name groupName groupID fileObj);
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -620,7 +629,10 @@ sub attrSet {
 
 			
 	}
-	
+	# Clear-out the attribute index, it is no longer valid with the updates
+	#  we just made.
+	$self->{fileObj}->clearAttrIndex;
+
 	return 1;
   
 }
@@ -665,7 +677,10 @@ sub attrDel {
 		}
 		
 	}
-	
+	# Clear-out the attribute index, it is no longer valid with the updates
+	#  we just made.
+	$self->{fileObj}->clearAttrIndex;
+
 	return 1;
   
 }

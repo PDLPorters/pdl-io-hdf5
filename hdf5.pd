@@ -284,7 +284,7 @@ sub group {
 	my $parentName = '';
 	
 	my $group =  new PDL::HDF5::Group( 'groupName'=> $name, parentName => $parentName,
-					parentID => $parentID );
+					parentID => $parentID, fileObj => $self  );
 
 }
 
@@ -564,6 +564,34 @@ sub _buildAttrIndex{
 	}
 	
 }
+
+
+=head2 clearAttrIndex
+
+=for ref
+
+Method to clear the attribute index hash
+for the object. This is a mostly internal method that is
+called whenever some part of the HDF5 file has changed and the
+L<attrIndex> index is no longer valid.
+
+
+B<Usage:>
+
+=for usage
+
+   $hdf5obj->clearAttrIndex;
+
+=cut
+
+sub clearAttrIndex{
+
+	my $self = shift;
+	$self->{attrIndex} = undef;
+	
+}
+
+
 
 =head2 allAttrValues
 

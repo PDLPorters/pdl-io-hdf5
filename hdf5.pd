@@ -100,7 +100,7 @@ added later.)
 
 =over 1
 
-=item fileID
+=item ID
 
 ID number given to the file by the HDF5 library
 
@@ -265,7 +265,7 @@ sub new {
   
   # Record file name, ID
   $self->{filename} = $file;
-  $self->{fileID} = $fileID;
+  $self->{ID} = $fileID;
 
   $self->{attrIndex}  = undef; # Initialize attrIndex
   $self->{groupIndex} = undef; # Initialize groupIndex
@@ -324,11 +324,11 @@ sub group {
 
 	my $name = $_[0]; # get the group name
 	
-	my $parentID = $self->{fileID};
+	my $parentID = $self->{ID};
 	my $parentName = '';
 	
-	my $group =  new PDL::HDF5::Group( 'groupName'=> $name, parentName => $parentName,
-					parentID => $parentID, fileObj => $self  );
+	my $group =  new PDL::HDF5::Group( 'name'=> $name, parent => $self,
+					 fileObj => $self  );
 
 }
 
@@ -678,7 +678,7 @@ sub _buildGroupIndex{
 	my $key;                     # group index key
 	
 	# Go Thru All Groups
-	foreach $group(keys %$attrIndex){
+	foreach $group(sort keys %$attrIndex){
 	
 		$attrIndexElement = $attrIndex->{$group};
 		
@@ -922,6 +922,51 @@ sub allAttrNames{
 		
 }
 
+=head2 IDget
+
+=for ref
+
+Returns the HDF5 library ID for this object
+
+B<Usage:>
+
+=for usage
+
+ my $ID = $hdf5obj->IDget;
+
+=cut
+
+sub IDget{
+
+	my $self = shift;
+	
+	return $self->{ID};
+		
+}
+
+=head2 nameGet
+
+=for ref
+
+Returns the HDF5 Group Name for this object. (Always '/', i.e. the
+root group for this top-level object)
+
+B<Usage:>
+
+=for usage
+
+ my $name = $hdf5obj->nameGet;
+
+=cut
+
+sub nameGet{
+
+	my $self = shift;
+	
+	return '/';
+		
+}
+
 
 =head2 DESTROY
 
@@ -941,7 +986,7 @@ B<Usage:>
 sub DESTROY {
   my $self = shift;
 
-  if( H5Fclose($self->{fileID}) < 0){
+  if( H5Fclose($self->{ID}) < 0){
 	warn("Error closing HDF5 file ".$self->{filename}."\n");
   }
 

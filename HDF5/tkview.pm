@@ -121,7 +121,7 @@ sub new{
 	if (defined $H5obj){
 	
 		
-		  my $hl = $mw->Scrolled('Tree',-separator => "\01",-drawbranch => 1, -width => '15', -bg => 'white');
+		  my $hl = $mw->Scrolled('Tree',-separator => $;,-drawbranch => 1, -width => '15', -bg => 'white');
 		  $hl->configure(-opencmd => [\&More,$self, $hl]); 
 		  $hl->configure(-command => [\&activateCmd,$self]);  # command to called when entry double-clicked
 		  my $name = $H5obj->filename;
@@ -164,7 +164,7 @@ sub AddChildren
 	 my $name;
 	 my $text;
 	  
-	 if( ref($data) =~ /Group/ || !($path =~ /\01/ ) ){ # Current Item to expand is a group or top level of file
+	 if( ref($data) =~ /Group/ || !($path =~ /$;/ ) ){ # Current Item to expand is a group or top level of file
 	
        		# Display any Attributes First:
 		my @attrs;  # attributes stored
@@ -179,7 +179,7 @@ sub AddChildren
 		foreach $attr(@attrs){  # add each attribute to the display
 			$attrValue = $attrs{$attr};
 			$text = "$attr: $attrValue";
-			$hl->add("$path\01_Attr$attr",  -text => $text, -data => $attrValue);
+			$hl->add("$path$;"."_Attr$attr",  -text => $text, -data => $attrValue);
 
 		}
 
@@ -191,7 +191,7 @@ sub AddChildren
 		foreach $dataset(@datasets){  # add each attribute to the display
 			@dims = $data->dataset($dataset)->dims;  # get the dims of the dataset
 			$text = "$dataset: Dims ".join(", ",@dims);
-			$hl->add("$path\01_Dset$dataset", -image => $self->{cubeImage}, -text => $text, -data => $data);
+			$hl->add("$path$;"."_Dset$dataset", -image => $self->{cubeImage}, -text => $text, -data => $data);
 
 		}
 
@@ -206,8 +206,8 @@ sub AddChildren
 		foreach $groupName(@groups){  # Add each group to the display
 
 			# data element is the parent object and the group name.
-			$hl->add("$path\01_Group$groupName", -image => $self->{groupImage}, -text => $groupName, -data => [ $data,$groupName] );
-			$hl->setmode( "$path\01_Group$groupName",  "open");
+			$hl->add("$path$;"."_Group$groupName", -image => $self->{groupImage}, -text => $groupName, -data => [ $data,$groupName] );
+			$hl->setmode( "$path$;"."_Group$groupName",  "open");
 		}
 
 
@@ -233,7 +233,7 @@ sub More
 	 # print "item = $item\n";
 	 my $data = $w->entrycget($item,'-data');  #get the data ref for this entry
 	 
-	 my @levels = split("\01",$item);
+	 my @levels = split($;,$item);
 	
 	 if( @levels && ( $levels[-1] =~ /^_Group/) ){ # if this is a group then get the group object
 	
@@ -293,7 +293,7 @@ sub activateCmd{
 	my ($name) = (@_);  # Name of the hlist element that was selected
 	
 
-	return unless($name =~ /\01_Dset(.+)$/);  # only process datasets
+	return unless($name =~ /$;_Dset(.+)$/);  # only process datasets
 	my $datasetName = $1;
 	my $hlist = $self->{hl};
 

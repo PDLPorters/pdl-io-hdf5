@@ -38,7 +38,7 @@ $b->attach($tree,
 		 #print "Box for $mouseItem is ".join(", ",@BBox)."\n";
 		 #print "y = $pointerY\n";
 		 if( ($pointerY >= $BBox[1] ) && ($pointerY <= $BBox[3]) &&   # Popup balloon if withing bounding box
-			$mouseItem =~ /\01_Dset(.+)$/ ){   			  # and a dataset item
+			$mouseItem =~ /$;_Dset(.+)$/ ){   			  # and a dataset item
 			 my $datasetName = $1;
 			 my $text = $tree->entrycget($mouseItem,'-text');
 			 $text =~ /\: Dims (.+)$/;

@@ -20,21 +20,17 @@ See L<PDL::HDF5>
 
 =over 1
 
-=item datasetID
+=item ID
 
 ID number given to the dataset by the HDF5 library
 
-=item datasetname
+=item name
 
 Name of the dataset. 
 
-=item groupID
+=item parent
 
-groupID of the HDF file that owns this dataset.
-
-=item groupName
-
-group Name of the HDF file that owns this dataset.
+Ref to parent object (group) that owns this dateset.
 
 =item fileObj
 
@@ -60,13 +56,12 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Dataset( name => $name, groupName => $groupName, 
-   				groupID => $groupID, fileObj => $fileObj);
+   $a = new PDL::HDF5:Dataset( name => $name, parent => $parent, 
+   				fileObj => $fileObj);
 	Args:
 	$name				Name of the dataset
-	$groupName			Filename that owns this group
-	$groupID			groupID of the file that owns this group
-	$fileObj                        PDL::HDF object that owns this group.
+	$parent				Parent Object that owns this dataset
+	$fileObj                        PDL::HDF object that owns this dateset.
 
 
 
@@ -78,7 +73,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( name groupName groupID fileObj);
+	my @DataMembers = qw( name parent fileObj);
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -95,8 +90,9 @@ sub new{
 		$self->{$varName} = $parms{$varName};
 	}
 	
-	my $groupID = $self->{groupID};
-	my $groupName = $self->{groupName};
+	my $parent = $self->{parent};
+	my $groupID = $parent->IDget;
+	my $groupName = $parent->nameGet;
 	my $name = $self->{name};
 	my $datasetID;
 
@@ -123,7 +119,7 @@ sub new{
 	}
                              
 
-	$self->{datasetID} = $datasetID;
+	$self->{ID} = $datasetID;
 
 	bless $self, $type;
 
@@ -142,16 +138,16 @@ B<Usage:>
 
    No Usage. Automatically called
    
-    
+
 =cut
 
 
 sub DESTROY {
   my $self = shift;
-  my $datasetID = $self->{datasetID};
-  print "In DataSet DEstroy\n";
+  my $datasetID = $self->{ID};
+  # print "In DataSet DEstroy\n";
 
-  if( $datasetID && (PDL::HDF5::H5Dclose($self->{datasetID}) < 0 )){
+  if( $datasetID && (PDL::HDF5::H5Dclose($self->{ID}) < 0 )){
 	warn("Error closing HDF5 Dataset '".$self->{name}."' in file:group: '".$self->{filename}.":".$self->{group}."'\n");
   }
 
@@ -204,8 +200,9 @@ sub set{
 	my ($pdl) = @_;
 
 
-	my $groupID = $self->{groupID};
-	my $datasetID = $self->{datasetID};
+	my $parent = $self->{parent};
+	my $groupID = $parent->IDget;
+	my $datasetID = $self->{ID};
 	my $name = $self->{name};
 	my $internalhdf5_type;  # hdf5 type that describes the way data is stored in memory
 	my $hdf5Filetype;       # hdf5 type that describes the way data will be stored in the file.
@@ -265,7 +262,7 @@ sub set{
 			carp("Can't Create Dataspace in ".__PACKAGE__.":set\n");
 			return undef;
 		}
-		$self->{datasetID} = $datasetID;
+		$self->{ID} = $datasetID;
 	}
 
 	# Write the actual data:
@@ -352,8 +349,9 @@ sub get{
 	my $pdl;
 
 
-	my $groupID = $self->{groupID};
-	my $datasetID = $self->{datasetID};
+	my $parent = $self->{parent};
+	my $groupID = $parent->IDget;
+	my $datasetID = $self->{ID};
 	my $name = $self->{name};
 	my $stringSize;  		# String size, if we are retrieving a string type
 	my $PDLtype;     		# PDL type that the data will be mapped to
@@ -508,8 +506,9 @@ sub dims{
 
 	$self = shift;
 
-	my $groupID = $self->{groupID};
-	my $datasetID = $self->{datasetID};
+	my $parent = $self->{parent};
+	my $groupID = $parent->IDget;
+	my $datasetID = $self->{ID};
 	my $name = $self->{name};
 
 
@@ -574,7 +573,7 @@ sub attrSet {
 
 	my %attrs = @_; # get atribute hash
 	
-	my $datasetID = $self->{datasetID};
+	my $datasetID = $self->{ID};
 
 	unless( $datasetID){ # Error checking
 		carp("Can't Set Attribute for empty dataset. Try writing some data to it first:\n");
@@ -664,7 +663,7 @@ sub attrDel {
 
 	my @attrs = @_; # get atribute names
 	
-	my $datasetID = $self->{datasetID};
+	my $datasetID = $self->{ID};
 
 	my $attr;
 	my $rc; #Return code returned by H5Adelete
@@ -706,7 +705,7 @@ B<Usage:>
 sub attrs {
 	my $self = shift;
 
-	my $datasetID = $self->{datasetID};
+	my $datasetID = $self->{ID};
 	
 	my $defaultMaxSize = 256; # default max size of a attribute name
 
@@ -777,7 +776,7 @@ sub attrGet {
 
 	my @attrs = @_; # get atribute array
 	
-	my $datasetID = $self->{datasetID};
+	my $datasetID = $self->{ID};
 	
 	my($attrName,$attrValue);
 
@@ -877,6 +876,51 @@ sub attrGet {
 	return @attrValues;
 
 }
+
+=head2 IDget
+
+=for ref
+
+Returns the HDF5 library ID for this object
+
+B<Usage:>
+
+=for usage
+
+ my $ID = $dataSetObj->IDget;
+
+=cut
+
+sub IDget{
+
+	my $self = shift;
+	
+	return $self->{ID};
+		
+}
+
+=head2 nameGet
+
+=for ref
+
+Returns the HDF5 Dataset Name for this object. 
+
+B<Usage:>
+
+=for usage
+
+ my $name = $datasetObj->nameGet;
+
+=cut
+
+sub nameGet{
+
+	my $self = shift;
+	
+	return $self->{name};
+		
+}
+
 
 1;
 

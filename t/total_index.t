@@ -112,20 +112,20 @@ $baseline =
 "{
     attr1$;attr2 =>     {
         dudeman23$;What?? =>         [
-            /mygroup/subgroup,
-            /mygroup,
-            /dude2,
             /,
+            /dude2,
+            /mygroup,
+            /mygroup/subgroup,
         ]
     }
     attr1$;attr3 =>     {
     }
     attr2 =>     {
         What?? =>         [
-            /mygroup/subgroup,
-            /mygroup,
-            /dude2,
             /,
+            /dude2,
+            /mygroup,
+            /mygroup/subgroup,
         ]
     }
 }
@@ -142,13 +142,13 @@ my @groups = $hdfobj->getGroupsByAttr( 'attr1'  => 'dudeman23',
 					'attr2' => 'What??');
 $baseline = 
 q![
-    /mygroup/subgroup,
-    /mygroup,
-    /dude2,
     /,
+    /dude2,
+    /mygroup,
+    /mygroup/subgroup,
 ]
 !;
-# print recursiveDump(\@groups);
+#print recursiveDump(\@groups);
 $result = recursiveDump(\@groups);
 ok($testNo++,$baseline eq $result );
 

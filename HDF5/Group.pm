@@ -21,21 +21,17 @@ See L<PDL::HDF5>
 
 =over 1
 
-=item groupID
+=item ID
 
 ID number given to the group by the HDF5 library
 
-=item groupName
+=item name
 
 Name of the group. (Absolute to the root group '/'. e.g. /maingroup/subgroup)
 
-=item parentID
+=item parent
 
-ID (fileID or groupID) of the HDF file/group that owns this group.
-
-=item parentName
-
-Name of the HDF file or group that owns this group
+Ref to parent object (file or group) that owns this group.
 
 =item fileObj
 
@@ -60,13 +56,12 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Group( groupName => $name, parentName => $parentName,
-   			     parentID => $parentID, fileObj => $fileObj );
+   $a = new PDL::HDF5:Group( name => $name, parent => $parent,
+   			      fileObj => $fileObj );
 	Args:
 	$name				Name of the group (relative to the parent)
-	$parentName			Filename that owns this group
-	$parentID			FileID of the file that owns this group
-	$fileObj                        PDL::HDF object that owns this group.
+	$parent				Parent Object that owns this group
+	$fileObj                        PDL::HDF (Top Level) object that owns this group.
 
 =cut
 
@@ -76,7 +71,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( groupName parentName parentID fileObj);
+	my @DataMembers = qw( name parent fileObj);
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -89,13 +84,20 @@ sub new{
 		$self->{$varName} = $parms{$varName};
 	}
 	
-	my $parentID = $self->{parentID};
-	my $parentName = $self->{parentName};
-	my $groupName = $self->{groupName};
+	my $parent = $self->{parent};
+	my $parentID = $parent->IDget;
+	my $parentName = $parent->nameGet;
+	my $groupName = $self->{name};
 	my $groupID;
 	
 	# Adjust groupname to be absolute:
-	$self->{groupName} = "$parentName/$groupName";
+	if( $parentName ne '/') {  # Parent is not the root group
+		$self->{name} = "$parentName/$groupName";
+	}
+	else{  # Parent is root group
+		$self->{name} = "$parentName$groupName";
+	}
+
 	
 
 	# Turn Error Reporting off for the following, so H5 lib doesn't complain
@@ -123,7 +125,7 @@ sub new{
 	}
 		
 	
-	$self->{groupID} = $groupID;
+	$self->{ID} = $groupID;
 
 	bless $self, $type;
 
@@ -142,14 +144,14 @@ B<Usage:>
 
    No Usage. Automatically called
    
-    
+
 =cut
 
 
 sub DESTROY {
   my $self = shift;
-  print "In Group DEstroy\n";
-  if( PDL::HDF5::H5Gclose($self->{groupID}) < 0){
+  #print "In Group DEstroy\n";
+  if( PDL::HDF5::H5Gclose($self->{ID}) < 0){
 	warn("Error closing HDF5 Group '".$self->{name}."' in file '".$self->{parentName}."'\n");
   }
 
@@ -183,7 +185,7 @@ sub attrSet {
 
 	my %attrs = @_; # get atribute hash
 	
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my($key,$value);
 
@@ -264,7 +266,7 @@ sub attrGet {
 
 	my @attrs = @_; # get atribute array
 	
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my($attrName,$attrValue);
 
@@ -392,7 +394,7 @@ sub attrDel {
 
 	my @attrs = @_; # get atribute names
 	
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my $attr;
 	my $rc; #Return code returned by H5Adelete
@@ -434,7 +436,7 @@ B<Usage:>
 sub attrs {
 	my $self = shift;
 
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my $defaultMaxSize = 256; # default max size of a attribute name
 
@@ -505,11 +507,10 @@ sub dataset {
 
 	my $name = $_[0];
 
-	my $groupID = $self->{groupID}; # get the group name of the current group
-	my $groupName = $self->{groupName};
+	my $groupID = $self->{ID}; # get the group name of the current group
 	
-	my $dataset = PDL::HDF5::Dataset->new( name=> $name, groupName => $groupName,
-					groupID => $groupID, fileObj => $self->{fileObj} );
+	my $dataset = PDL::HDF5::Dataset->new( name=> $name, parent => $self,
+					 fileObj => $self->{fileObj} );
 
 }
 
@@ -534,7 +535,7 @@ B<Usage:>
 sub datasets {
 	my $self = shift;
 
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my @totalDatasets = PDL::HDF5::H5GgetDatasetNames($groupID,".");
 	
@@ -565,11 +566,9 @@ sub group {
 
 	my $name = $_[0]; # get the group name
 	
-	my $parentID = $self->{groupID}; # get the group name of the current group
-	my $parentName = $self->{groupName};
 	
-	my $group =  new PDL::HDF5::Group( groupName=> $name, parentName => $parentName,
-					parentID => $parentID, fileObj => $self->{fileObj}  );
+	my $group =  new PDL::HDF5::Group( name=> $name, parent => $self,
+					fileObj => $self->{fileObj}  );
 					
 
 	return $group;
@@ -598,7 +597,7 @@ B<Usage:>
 sub groups {
 	my $self = shift;
 
-	my $groupID = $self->{groupID};
+	my $groupID = $self->{ID};
 	
 	my @totalgroups = PDL::HDF5::H5GgetGroupNames($groupID,'.');
 	
@@ -608,31 +607,6 @@ sub groups {
   
 }
 
-
-
-=head2 groupName
-
-=for ref
-
-Get the name of the group (absolute to the root group)
-
-
-B<Usage:>
-
-=for usage
-
-   print $group->groupName;
-
-
-=cut
-
-sub groupName {
-	my $self = shift;
-
-	
-	return $self->{groupName};
-  
-}
 
 =head2 _buildAttrIndex
 
@@ -673,7 +647,7 @@ sub _buildAttrIndex{
 	my @attrValues = $self->attrGet(@attrs);
 	
 	# Get the group name
-	my $groupName = $self->groupName;
+	my $groupName = $self->nameGet;
 	
 	my %indexElement; # element of the index for this group
 	
@@ -699,7 +673,49 @@ sub _buildAttrIndex{
 	
 }
 
+=head2 IDget
 
+=for ref
+
+Returns the HDF5 library ID for this object
+
+B<Usage:>
+
+=for usage
+
+ my $ID = $groupObj->IDget;
+
+=cut
+
+sub IDget{
+
+	my $self = shift;
+	
+	return $self->{ID};
+		
+}
+
+=head2 nameGet
+
+=for ref
+
+Returns the HDF5 Group Name for this object. (Relative to the root group)
+
+B<Usage:>
+
+=for usage
+
+ my $name = $groupObj->nameGet;
+
+=cut
+
+sub nameGet{
+
+	my $self = shift;
+	
+	return $self->{name};
+		
+}
 
 1;
 

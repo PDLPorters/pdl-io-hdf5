@@ -9,6 +9,7 @@ hsize_t *		T_PVI
 hsize_t 		T_IV
 herr_t *		T_PVI
 herr_t 			T_IV
+htri_t			T_IV
 PDLchar *		T_PDL
 PDLuchar *		T_PDL
 PDLshort *		T_PDL

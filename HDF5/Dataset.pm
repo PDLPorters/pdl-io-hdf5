@@ -358,6 +358,7 @@ sub get{
  	if( $Ndims < 0 ){
 		carp("Can't Get Number of Dims in  Dataspace in ".__PACKAGE__.":get\n");
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
 

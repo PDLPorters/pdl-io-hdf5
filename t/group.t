@@ -7,7 +7,7 @@ use PDL::HDF5::Dataset;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..16\n";  
+print "1..17\n";  
 
 my $testNo = 1;
 
@@ -40,6 +40,12 @@ ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 # Get list of attributes
 my @attrs = $group->attrs;
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+
+# Get a list of attribute values
+my @attrValues = $group->attrGet(sort @attrs);
+
+ok($testNo++, join(",",@attrValues) eq 'dudeman23,What??' );
+# print "Attr Values = '".join("', '",@attrValues)."'\n";
 
 # Get a list of datasets (should be none)
 my @datasets = $group->datasets;

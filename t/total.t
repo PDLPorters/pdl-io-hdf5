@@ -38,6 +38,11 @@ ok($testNo++, $hdfobj->attrDel( 'dummyAttr', 'dummyAttr2' ));
 my @attrs = $hdfobj->attrs;
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
+# Get a list of attribute values
+my @attrValues = $hdfobj->attrGet(sort @attrs);
+
+ok($testNo++, join(",",@attrValues) eq 'dudeman23,What??' );
+# print "Attr Values = '".join("', '",@attrValues)."'\n";
 
 ##############################################
 

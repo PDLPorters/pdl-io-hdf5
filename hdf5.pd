@@ -398,6 +398,35 @@ sub attrSet {
 }
 
 
+
+=head2 attrGet
+
+=for ref
+
+Get the value of an attribute(s) in the root '/' group of the file.
+
+Currently the only attribute types supported are null-terminated strings.
+
+B<Usage:>
+
+=for usage
+
+   @attrValues = $HDFfile->attrGet( 'attr1', 'attr2' );
+
+
+=cut
+
+sub attrGet {
+	my $self = shift;
+
+	my @attrs = @_; # get atribute hash
+	
+	
+	return $self->group("/")->attrGet(@attrs);
+}
+
+
+
 =head2 attrDel
 
 =for ref
@@ -688,11 +717,17 @@ herr_t H5Aclose(hid_t attr_id);
 int H5Aget_num_attrs(hid_t loc_id);
 hid_t H5Aopen_idx(hid_t loc_id, unsigned int idx);
 ssize_t H5Aget_name(hid_t attr_id, size_t buf_size, char *buf);
+htri_t H5Sis_simple(hid_t space_id);
+hid_t H5Aget_space(hid_t attr_id);
+hid_t H5Aget_type(hid_t attr_id);
+# The Attrib read only supports char buffer right now
+herr_t H5Aread(hid_t attr_id, hid_t mem_type_id, char *buf);
 
 # Type Functions:
 herr_t H5Tset_size(hid_t type_id, size_t size);
 herr_t H5Tclose(hid_t type_id);
 hid_t H5Tcopy(hid_t type_id);
+size_t H5Tget_size(hid_t type_id);
 
 EODEF
 

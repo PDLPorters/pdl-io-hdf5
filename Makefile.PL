@@ -84,6 +84,7 @@ if ($Config{'osname'} =~ /linux/) {
 $LIBS = "-L$hdf5_lib_path -lhdf5 ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
+$LIBS .= " -lm";
 
 $package = ["hdf5.pd",HDF5,PDL::HDF5];
 WriteMakefile(

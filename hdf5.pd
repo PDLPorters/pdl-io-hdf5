@@ -128,6 +128,10 @@ The index is of this form:
    .
   }
 
+For the purposes of indexing groups by their attributes, the attributes are 
+applied hierarchial. i.e. any attributes of the higher level groups are assumed to be 
+apply for the lower level groups.
+
 =back
 
 =head1 METHODS
@@ -549,13 +553,14 @@ sub _buildAttrIndex{
 	
 	$index->{'/'} = \%indexElement;
 	
+	my $topLevelAttrs = { %indexElement }; 
 	 
 	# Now Do any subgroups: 
 	my @subGroups = $self->groups;
 	my $subGroup;
 	
 	foreach $subGroup(@subGroups){
-		$self->group($subGroup)->_buildAttrIndex($index);
+		$self->group($subGroup)->_buildAttrIndex($index,$topLevelAttrs);
 	}
 	
 }

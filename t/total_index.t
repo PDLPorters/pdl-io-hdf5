@@ -25,12 +25,18 @@ my $result = Dumper($hdfobj->{attrIndex});
 
 my $baseline = 
 q!$VAR1 = {
-          '/mygroup/subgroup' => {},
+          '/mygroup/subgroup' => {
+                                   'attr1' => 'dudeman23',
+                                   'attr2' => 'What??'
+                                 },
           '/mygroup' => {
                           'attr1' => 'dudeman23',
                           'attr2' => 'What??'
                         },
-          '/dude2' => {},
+          '/dude2' => {
+                        'attr1' => 'dudeman23',
+                        'attr2' => 'What??'
+                      },
           '/' => {
                    'attr1' => 'dudeman23',
                    'attr2' => 'What??'
@@ -38,6 +44,7 @@ q!$VAR1 = {
         };
 !;
 
+# print $result;
 ok($testNo++,$baseline eq $result );
 
 

@@ -626,24 +626,31 @@ sub groupName {
 Internal Recursive Method to build the attribute index hash
 for the object
 
+For the purposes of indexing groups by their attributes, the attributes are 
+applied hierarchial. i.e. any attributes of the higher level groups are assumed to be 
+apply for the lower level groups.
+
 
 B<Usage:>
 
 =for usage
 
-   $group->_buildAttrIndex($index);
+   $group->_buildAttrIndex($index, $currentAttrs);
 
- Input: $index hash-ref
- 
- Output:
-    Updated $index hash ref
+    
+ Input/Output:
+
+         $index:        Total Index hash ref
+	 $currentAttrs: Hash refs of the attributes valid 
+	                for the current group.
+	                
 
 
 =cut
 
 sub _buildAttrIndex{
 
-	my ($self, $index) = @_;
+	my ($self, $index, $currentAttrs) = @_;
 	
 	# Take care of any attributes in the current group
 	my @attrs = $self->attrs;
@@ -655,6 +662,13 @@ sub _buildAttrIndex{
 	
 	my %indexElement; # element of the index for this group
 	
+	%indexElement = %$currentAttrs; # Initialize index element
+				        # with attributes valid at the 
+					# group above
+					
+	# Add (or overwrite) attributes for this group
+	#    i.e. local group attributes take precedence over
+	#         higher-level attributes
 	@indexElement{@attrs} = @attrValues;
 	
 	$index->{$groupName} = \%indexElement;
@@ -665,7 +679,7 @@ sub _buildAttrIndex{
 	my $subGroup;
 	
 	foreach $subGroup(@subGroups){
-		$self->group($subGroup)->_buildAttrIndex($index);
+		$self->group($subGroup)->_buildAttrIndex($index,\%indexElement);
 	}
 	
 }

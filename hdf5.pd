@@ -37,7 +37,7 @@ at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
 
 =head2 LIMITATIONS
 
-Limitations: Currently this interface only provides a subset of the total HDF5 library's
+Currently this interface only provides a subset of the total HDF5 library's
 capability. 
 
 =over 1
@@ -51,7 +51,7 @@ support them.
 
 Only HDF5 Simple dataspaces are supported.
 
-item *
+=item *
 
 Only 0-dimensional (i.e. scalar) attributes are supported. (Support for PDLs as attributes could possibly be
 added later.)
@@ -60,35 +60,40 @@ added later.)
 
 =head1 SYNOPSIS
 
-	use PDL::HDF5;
-	
-	# Files
-	my $newfile = new PDL::HDF5("newfile.hdf"); # create new hdf5 file
-	my $attrValue = $existingFile->attrGet('AttrName'); # Get attribute value for file
-	$existingFile->attSet('AttrName' => 'AttrValue');   # Set attribute value for file
+  use PDL::HDF5;
 
-	#Groups
-	my $group = $newfile->group("/mygroup"); # create a new or open existing group
-	my @groups = $existingFile->groups;  # get a list of all the groups at the root '/'
-					     # level.
-	my @groups = $group->groups;         # get a list of all the groups at the "mygroup"
-					     # level.
+  # Files #######
+  my $newfile = new PDL::HDF5("newfile.hdf");         # create new hdf5 or open existing file.
+  my $attrValue = $existingFile->attrGet('AttrName'); # Get attribute value for file
+  $existingFile->attSet('AttrName' => 'AttrValue');   # Set attribute value(s) for file
 
-	my $attrValue = $group->attrGet('AttrName');  # Get attribute value for a group
-	$group->attrSet('AttrName' => 'AttrValue');   # Set attribute value(s) for a group
-	$group->attrDel('AttrName1', 'AttrName2');    # Delete attribute(s) for a group
-	@attrs = $group->attrs;                       # Get List of attributes for a group
+  #Groups ######
+  my $group = $newfile->group("/mygroup");            # create a new or open existing group
+  my @groups = $existingFile->groups;      	      # get a list of all the groups at the root '/'
+					              # level.
+  my @groups = $group->groups;             	      # get a list of all the groups at the "mygroup"
+					              # level.
+  my $group2 = $group->group('newgroup');             # Create/open a new group in existing group "mygroup"
 
-	# Data Sets
-	my $dataset = $group->dataset( 'datasetName'); # create a new or open existing dataset
-	my $dataset2 = $newfile->dataset( 'datasetName'); # create a new or open existing dataset
-							  # in the root group.
-	my @datasets =  $existingFile->datasets;       # get a list of all datasets in the root '/' group
-	my @datasets =  $group->datasets;              # get a list of all datasets in a group
-	$pdl = $dataset->get();                    # Get the array data in the dataset
-	$dataset->set($pdl);                       # Set the array data in the dataset
-	my $attrValue = $dataset->attrGet('AttrName'); # Get attribute value for a dataset
-	$dataset->attSet('AttrName' => 'AttrValue');     # Set attribute value(s) for a dataset
+  my $attrValue = $group->attrGet('AttrName');        # Get attribute value for a group
+  $group->attrSet('AttrName' => 'AttrValue');         # Set attribute value(s) for a group
+  $group->attrDel('AttrName1', 'AttrName2');          # Delete attribute(s) for a group
+  @attrs = $group->attrs;                             # Get List of attributes for a group
+
+  # Data Sets ########
+  my $dataset = $group->dataset( 'datasetName');      # create a new or open existing dataset
+						      #  in an existing group
+  my $dataset = $newfile->dataset( 'datasetName');    # create a new or open existing dataset
+						      #  in the root group of a file
+
+  my $dataset2 = $newfile->dataset( 'datasetName');   # create a new or open existing dataset
+						      # in the root group.
+  my @datasets =  $existingFile->datasets;            # get a list of all datasets in the root '/' group
+  my @datasets =  $group->datasets;                   # get a list of all datasets in a group
+  $pdl = $dataset->get();                             # Get the array data in the dataset
+  $dataset->set($pdl);                                # Set the array data in the dataset
+  my $attrValue = $dataset->attrGet('AttrName');      # Get attribute value for a dataset
+  $dataset->attSet('AttrName' => 'AttrValue');        # Set attribute value(s) for a dataset
 
 =head1 MEMBER DATA
 
@@ -232,7 +237,7 @@ sub group {
 	my $parentID = $self->{fileID};
 	my $parentName = $self->{filename};
 	
-	my $group =  new PDL::HDF5::Group( 'name'=> $name, parentName => $parentName,
+	my $group =  new PDL::HDF5::Group( 'groupName'=> $name, parentName => $parentName,
 					parentID => $parentID );
 
 }
@@ -264,6 +269,66 @@ sub groups {
 	
 
 }
+
+=head2 dataset
+
+=for ref
+
+Open or create a dataset in the root "/" group (i.e. top level)
+of the HDF5 file.
+
+
+B<Usage:>
+
+=for usage
+
+   $HDFfile->dataset("groupName");
+   
+   
+Returns undef on failure, 1 on success.
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->dataset("groupName");
+
+=cut
+
+sub dataset {
+	my $self = shift;
+
+	my $name = $_[0]; # get the dataset name
+	
+	return $self->group("/")->dataset($name);
+}
+
+
+=head2 datasets
+
+=for ref
+
+Get a list of all dataset names in the root "/" group.
+
+
+B<Usage:>
+
+=for usage
+
+   @datasets = $HDF5file->datasets;
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->datasets;
+
+=cut
+
+sub datasets{
+	my $self = shift;
+
+	my $name = $_[0]; # get the dataset name
+	
+	return $self->group("/")->datasets;
+}
+
 
 
 =head2 attrSet
@@ -1809,6 +1874,7 @@ EOXS
 pp_addpm( {At => Top}, <<'EOPM');
 
 use PDL::HDF5::Group;
+
 
 # Require needed here becuase dataset uses some of the XS 
 #  calls that are defined in PDL::HDF5 (like PDL::HDF5::H5T_NATIVE_CHAR() )

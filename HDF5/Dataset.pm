@@ -32,9 +32,9 @@ Name of the dataset.
 
 groupID of the HDF file that owns this dataset.
 
-=item groupname
+=item groupName
 
-groupname of the HDF file that owns this dataset.
+group Name of the HDF file that owns this dataset.
 
 =back
 
@@ -55,10 +55,10 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Dataset( name => $name, groupname => $groupname, groupID => $groupID );
+   $a = new PDL::HDF5:Dataset( name => $name, groupName => $groupName, groupID => $groupID );
 	Args:
 	$name				Name of the dataset
-	$groupname			Filename that owns this group
+	$groupName			Filename that owns this group
 	$groupID			groupID of the file that owns this group
 
 =cut
@@ -69,7 +69,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( name groupname groupID );
+	my @DataMembers = qw( name groupName groupID );
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -87,7 +87,7 @@ sub new{
 	}
 	
 	my $groupID = $self->{groupID};
-	my $groupname = $self->{groupname};
+	my $groupName = $self->{groupName};
 	my $name = $self->{name};
 	my $datasetID;
 

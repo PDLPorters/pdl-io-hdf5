@@ -19,7 +19,7 @@ unlink $filename if( -e $filename);
 my $hdfobj;
 ok($testNo++,$hdfobj = new PDL::HDF5("newFile.hd5"));
 
-my $group = new PDL::HDF5::Group( 'name'=> '/dude', parentName => "newFile.hd5",
+my $group = new PDL::HDF5::Group( groupName => '/dude', parentName => "newFile.hd5",
 					parentID => $hdfobj->{fileID});
 					
 					
@@ -47,11 +47,11 @@ my @datasets = $group->datasets;
 ok($testNo++, scalar(@datasets) == 0 );
 
 # Create another group
-my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', parentName => "newFile.hd5",
+my $group2 = new PDL::HDF5::Group( 'groupName'=> '/dude2', parentName => "newFile.hd5",
 					parentID => $hdfobj->{fileID});
 
 # open the root group
-my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', parentName => "newFile.hd5",
+my $rootGroup = new PDL::HDF5::Group( 'groupName'=> '/', parentName => "newFile.hd5",
 					parentID => $hdfobj->{fileID});
 
 # Get a list of groups
@@ -68,7 +68,7 @@ ok($testNo++, scalar(@groups) == 0 );
 
 
 # Create a dataset in the root group
-my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupname => "dude",
+my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupName => "dude",
 					groupID => $group->{groupID});
 					
 my $pdl = sequence(5,4);

@@ -7,7 +7,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..11\n";  
+print "1..19\n";  
 
 my $testNo = 1;
 
@@ -39,14 +39,11 @@ my @attrs = $hdfobj->attrs;
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
 
-
-
-my $group = $hdfobj->group("mygroup");
-
+##############################################
 
 # Create a dataset in the root group
-my $dataset = $hdfobj->dataset;
-					
+my $dataset = $hdfobj->dataset('rootdataset');
+
 my $pdl = sequence(5,4);
 
 
@@ -60,9 +57,35 @@ my $pdl2 = $dataset->get;
 ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 
 
-exit;		
-##### Stopped Here ####
-			
+# Get a list of datasets (should be one)
+my @datasets = $hdfobj->datasets;
+
+ok($testNo++, scalar(@datasets) == 1 );
+
+
+#############################################
+
+my $group = $hdfobj->group("mygroup");
+
+my $subgroup = $group->group("subgroup");
+
+# Create a dataset in the subgroup
+$dataset = $subgroup->dataset('my dataset');
+
+$pdl = sequence(5,4);
+
+
+ok($testNo++, $dataset->set($pdl) );
+# print "pdl written = \n".$pdl."\n";
+
+
+$pdl2 = $dataset->get;
+# print "pdl read = \n".$pdl2."\n";
+
+ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+
+
+################ Set Attributes at the Group Leve ###############			
 					
 # Set attribute for group
 ok($testNo++, $group->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
@@ -83,23 +106,19 @@ ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
 # Get a list of datasets (should be none)
-my @datasets = $group->datasets;
+@datasets = $group->datasets;
 
 ok($testNo++, scalar(@datasets) == 0 );
 
 # Create another group
-my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', filename => "newFile.hd5",
-					fileID => $hdfobj->{fileID});
+my $group2 = $hdfobj->group("dude2");
 
-# open the root group
-my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', filename => "newFile.hd5",
-					fileID => $hdfobj->{fileID});
 
-# Get a list of groups
-my @groups = $rootGroup->groups;
+# Get a list of groups in the root group
+my @groups = $hdfobj->groups;
 
 # print "Root group has these groups '".join(",",sort @groups)."'\n";
-ok($testNo++, join(",",sort @groups) eq 'dude,dude2' );
+ok($testNo++, join(",",sort @groups) eq 'dude2,mygroup' );
 
 
 # Get a list of groups in group2 (should be none)
@@ -108,23 +127,7 @@ ok($testNo++, join(",",sort @groups) eq 'dude,dude2' );
 ok($testNo++, scalar(@groups) == 0 );
 
 
-# Create a dataset in the root group
-my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupname => "dude",
-					groupID => $group->{groupID});
-					
-my $pdl = sequence(5,4);
-
-
-ok($testNo++, $dataset->set($pdl) );
-# print "pdl written = \n".$pdl."\n";
-
-
-my $pdl2 = $dataset->get;
-# print "pdl read = \n".$pdl2."\n";
-
-ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
-
-unlink("newfile.hd5");
+# unlink("newfile.hd5");
 
 print "completed\n";
 

@@ -1,5 +1,11 @@
+use PDL;
 use PDL::HDF5;
 use PDL::HDF5::Group;
+use PDL::HDF5::Dataset;
+
+# Script to test the group/dataset object separately.
+#  i.e. not the way they would normally be used as described
+#  in the PDL::HDF5 synopsis
 
 print "1..9\n";  
 
@@ -59,6 +65,17 @@ ok($testNo++, join(",",sort @groups) eq 'dude,dude2' );
 @groups = $group2->groups;
 
 ok($testNo++, scalar(@groups) == 0 );
+
+
+# Create a dataset in the root group
+my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupname => "/",
+					groupID => $rootGroup->{groupID});
+					
+my $pdl = sequence(5,4);
+
+$dataset->set($pdl);
+
+
 
 unlink("newfile.hd5");
 

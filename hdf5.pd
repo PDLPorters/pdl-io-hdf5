@@ -59,10 +59,10 @@ capability.
 	# Data Sets
 	my $dataset = $group->dataset( 'datasetName'); # create a new or open existing dataset
 	my @datasets =  $group->datasets;              # get a list of all datasets in a group
-	$pdl = $dataset->dataGet();                    # Get the array data in the dataset
-	$dataset->dataSet($pdl);                       # Set the array data in the dataset
+	$pdl = $dataset->get();                    # Get the array data in the dataset
+	$dataset->set($pdl);                       # Set the array data in the dataset
 	my $attrValue = $dataset->attrGet('AttrName'); # Get attribute value for a dataset
-	$group->attSet('AttrName' => 'AttrValue');     # Set attribute value(s) for a dataset
+	$dataset->attSet('AttrName' => 'AttrValue');     # Set attribute value(s) for a dataset
 
 =head1 MEMBER DATA
 
@@ -199,57 +199,6 @@ sub DESTROY {
 
 }
 
-sub openHDF{
-
-	my ($file) = @_;
-	
- 	#   /* Create a new file using default properties. */
-	my $file_id = H5Fcreate($file, H5F_ACC_TRUNC(), H5P_DEFAULT(), H5P_DEFAULT());
-	die("Can't Open HDF file '$file'\n") if( $file_id < 0);
-	
-	my @dims = (4,6);
-	
-          
-EOPM
-# Packing of long int array structure differs depending on 
-# if the current machine is little or big endian.   This logic
-#  probably won't work for 'weird' byte order machine, but for most
-#  others (intel, vax, sun, etc) it should be OK.
-#
-if( $Config{'byteorder'} =~ /^1/){ # little endian
-   pp_addpm("\t".'@dims = map { $_,0 } @dims; # Intersperse zeros to make 64 bit hsize_t');
-
-}
-else{ # Big Endian Machine
-   pp_addpm("\t".'@dims = map { 0,$_ } @dims; # Intersperse zeros to make 64 bit hsize_t');
-}
-
-pp_addpm(<<'EOPM');
-	my $dims = pack ("L*", @dims);
-   		
- 					   
-	# 	
-	my $dataspace_id = H5Screate_simple(2, $dims , $dims);
-        die("Can't Open Dataspace\n") if( $dataspace_id < 0);
-
-	# /* Create the dataset. */
-	my $dataset_id = H5Dcreate($file_id, "/dset", H5T_STD_I32BE(), $dataspace_id, 
-                H5P_DEFAULT());
-        die("Can't Open dataset\n") if( $dataset_id < 0);
-
-	# /* End access to the dataset and release resources used by it. */
-	my $status = H5Dclose($dataset_id);
-        die("Can't close  dataset\n") if( $status < 0);
-
-	# /* Terminate access to the data space. */
-	$status = H5Sclose($dataspace_id);
-        die("Can't close  dataspace \n") if( $status < 0);
-
-	# /* Close the file. */
-	$status = H5Fclose($file_id);
-        die("Can't close  file \n") if( $status < 0);
-	
-}
 EOPM
 
 

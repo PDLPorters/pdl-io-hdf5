@@ -94,11 +94,12 @@ WriteMakefile(
 	      'OBJECT'       => 'HDF5.o ',
 	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm',
 	      			  'HDF5/Group.pm' => '$(INST_LIBDIR)/HDF5/Group.pm',
+	      			  'HDF5/Dataset.pm' => '$(INST_LIBDIR)/HDF5/Dataset.pm',
 				},
 	      'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path", 
 	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
-				   'HDF5.pm HDF5.xs HDF5.o HDF5.c HDF5/Group.pm'},
+				   'HDF5.pm HDF5.xs HDF5.o HDF5.c HDF5/Group.pm HDF5/Dataset.pm'},
 	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz' },	
 	      );
 

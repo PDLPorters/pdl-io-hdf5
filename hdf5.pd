@@ -969,11 +969,11 @@ EOPM
 #  others (intel, vax, sun, etc) it should be OK.
 #
 if( $Config{'byteorder'} =~ /^1/){ # little endian
-   pp_addpm("\t".'@list = map { $_,0 } @list; # Intersperse zeros to make 64 bit hsize_t');
+   pp_addpm("\t".'@list = map (( $_,0 ), @list); # Intersperse zeros to make 64 bit hsize_t');
 
 }
 else{ # Big Endian Machine
-   pp_addpm("\t".'@list = map { 0,$_ } @list; # Intersperse zeros to make 64 bit hsize_t');
+   pp_addpm("\t".'@list = map (( 0,$_ ), @list); # Intersperse zeros to make 64 bit hsize_t');
 }
 
 pp_addpm(<<'EOPM');

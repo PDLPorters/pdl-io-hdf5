@@ -21,84 +21,86 @@ ok($testNo++,$hdfobj = new PDL::HDF5("newFile.hd5"));
 #  are just testing here:
 $hdfobj->_buildAttrIndex;
 
-my $result = Dumper($hdfobj->{attrIndex});
+my $result = recursiveDump($hdfobj->{attrIndex});
 
 my $baseline = 
-q!$VAR1 = {
-          '/mygroup/subgroup' => {
-                                   'attr1' => 'dudeman23',
-                                   'attr2' => 'What??'
-                                 },
-          '/mygroup' => {
-                          'attr1' => 'dudeman23',
-                          'attr2' => 'What??'
-                        },
-          '/dude2' => {
-                        'attr1' => 'dudeman23',
-                        'attr2' => 'What??'
-                      },
-          '/' => {
-                   'attr1' => 'dudeman23',
-                   'attr2' => 'What??'
-                 }
-        };
+q!{
+    / =>     {
+        attr1 => dudeman23,
+        attr2 => What??,
+    }
+    /dude2 =>     {
+        attr1 => dudeman23,
+        attr2 => What??,
+    }
+    /mygroup =>     {
+        attr1 => dudeman23,
+        attr2 => What??,
+    }
+    /mygroup/subgroup =>     {
+        attr1 => dudeman23,
+        attr2 => What??,
+    }
+}
 !;
 
-#print $result;
+# print $result;
 ok($testNo++,$baseline eq $result );
+
+# die;
 
 my @values = $hdfobj->allAttrValues('attr1');
 
 $baseline = 
-q!$VAR1 = [
-          'dudeman23',
-          'dudeman23',
-          'dudeman23',
-          'dudeman23'
-        ];
+q![
+    dudeman23,
+    dudeman23,
+    dudeman23,
+    dudeman23,
+]
 !;
 
-# print Dumper(\@values);
-$result = Dumper(\@values);
+#print recursiveDump(\@values);
+$result = recursiveDump(\@values);
 ok($testNo++,$baseline eq $result );
 
 @values = $hdfobj->allAttrValues('attr1','attr2');
 $baseline = 
-q!$VAR1 = [
-          [
-            'dudeman23',
-            'What??'
-          ],
-          [
-            'dudeman23',
-            'What??'
-          ],
-          [
-            'dudeman23',
-            'What??'
-          ],
-          [
-            'dudeman23',
-            'What??'
-          ]
-        ];
+q![
+    [
+        dudeman23,
+        What??,
+    ]
+    [
+        dudeman23,
+        What??,
+    ]
+    [
+        dudeman23,
+        What??,
+    ]
+    [
+        dudeman23,
+        What??,
+    ]
+]
 !;
 
-# print Dumper(\@values);
-$result = Dumper(\@values);
+#print recursiveDump(\@values);
+$result = recursiveDump(\@values);
 ok($testNo++,$baseline eq $result );
 
 my @names = $hdfobj->allAttrNames;
 
 $baseline = 
-q!$VAR1 = [
-          'attr1',
-          'attr2'
-        ];
+q![
+    attr1,
+    attr2,
+]
 !;
 
-# print Dumper(\@names);
-$result = Dumper(\@names);
+#print recursiveDump(\@names);
+$result = recursiveDump(\@names);
 ok($testNo++,$baseline eq $result );
 
 # Test building the groupIndex
@@ -107,29 +109,31 @@ $hdfobj->_buildGroupIndex('attr2');
 $hdfobj->_buildGroupIndex('attr1','attr3');
 
 $baseline = 
-"\$VAR1 = {
-          'attr2' => {
-                       'What??' => [
-                                     '/mygroup/subgroup',
-                                     '/mygroup',
-                                     '/dude2',
-                                     '/'
-                                   ]
-                     },
-          'attr1$;attr2' => {
-                             'dudeman23$;What??' => [
-                                                     '/mygroup/subgroup',
-                                                     '/mygroup',
-                                                     '/dude2',
-                                                     '/'
-                                                   ]
-                           },
-          'attr1$;attr3' => {}
-        };
+"{
+    attr1$;attr2 =>     {
+        dudeman23$;What?? =>         [
+            /mygroup/subgroup,
+            /mygroup,
+            /dude2,
+            /,
+        ]
+    }
+    attr1$;attr3 =>     {
+    }
+    attr2 =>     {
+        What?? =>         [
+            /mygroup/subgroup,
+            /mygroup,
+            /dude2,
+            /,
+        ]
+    }
+}
 ";
 
-# print Dumper($hdfobj->{groupIndex});
-$result = Dumper($hdfobj->{groupIndex});
+#print $baseline;
+#print recursiveDump($hdfobj->{groupIndex});
+$result = recursiveDump($hdfobj->{groupIndex});
 ok($testNo++,$baseline eq $result );
 
 
@@ -137,15 +141,15 @@ ok($testNo++,$baseline eq $result );
 my @groups = $hdfobj->getGroupsByAttr( 'attr1'  => 'dudeman23',
 					'attr2' => 'What??');
 $baseline = 
-q!$VAR1 = [
-          '/mygroup/subgroup',
-          '/mygroup',
-          '/dude2',
-          '/'
-        ];
+q![
+    /mygroup/subgroup,
+    /mygroup,
+    /dude2,
+    /,
+]
 !;
-# print Dumper(\@groups);
-$result = Dumper(\@groups);
+# print recursiveDump(\@groups);
+$result = recursiveDump(\@groups);
 ok($testNo++,$baseline eq $result );
 
 					
@@ -159,3 +163,65 @@ sub ok {
         print "not " unless $result ;
         print "ok $no\n" ;
 }
+
+# Dump of recursive array/hash.
+# We Could use Data:Dumper for this but it doesn't 
+#  order the keys, which causes problems 
+#  in regression testing on different platforsm
+sub recursiveDump{
+	my ($ref, $level) = @_;
+	
+	$level = 1 unless( defined($level));
+	
+	my $returnString; # String to return
+	
+	my $levelspace = '    ';  # Space used to indent
+	
+	my $indent = $levelspace x $level;
+	my $unindent = $levelspace x ($level-1) ;
+	
+	my $displayedData = $ref;
+	
+	my $arrayFlag = 0;
+	my @sortedKeys;
+	
+	 if( ref $ref eq 'ARRAY'){  # arrays are converted to hashes with indexes numbers
+				    # as keys for display
+		$displayedData = {};
+		@$displayedData{0..$#$ref} = @$ref;
+		
+		$returnString = $unindent."[\n";
+		$arrayFlag = 1;
+		@sortedKeys = (0..$#$ref);
+	 }
+	 else{
+		$returnString = $unindent."{\n";	
+		@sortedKeys = sort keys %$displayedData;
+
+	}
+
+	 my $value;
+	 foreach my $key(@sortedKeys){
+	 	
+		$value = $displayedData->{$key};
+		
+		if( ref( $value) ){
+			$returnString .= $indent.$key." => " unless( $arrayFlag); # dumping hash Ref
+			$returnString .= recursiveDump($value,$level+1);
+		}
+		else{
+			$returnString .= $indent.$value.",\n" if( $arrayFlag); # dumping array Ref
+			$returnString .= $indent.$key.' => '.$value.",\n" unless( $arrayFlag); # dumping hash Ref
+			
+		}
+		
+	}
+	
+	$returnString .= $unindent."}\n" unless($arrayFlag); # Dumping hash ref
+	$returnString .= $unindent."]\n" if($arrayFlag); # Dumping aray ref
+		
+	$returnString;
+	
+}
+
+		

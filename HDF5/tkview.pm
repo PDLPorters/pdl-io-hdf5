@@ -48,6 +48,13 @@ PDL::HDF5 Object
 
 Tk Hlist object 
 
+=item dataDisplaySub
+
+Sub ref to execute when a dataset is double-clicked. This defaults to a print of the dataset. See 
+L<dataDisplaySubSet> for details.
+
+Tk Hlist object 
+
 =back
 
 =head1 METHODS
@@ -116,7 +123,7 @@ sub new{
 		
 		  my $hl = $mw->Scrolled('Tree',-separator => "\01",-drawbranch => 1, -width => '15', -bg => 'white');
 		  $hl->configure(-opencmd => [\&More,$self, $hl]); 
-		
+		  $hl->configure(-command => [\&activateCmd,$self]);  # command to called when entry double-clicked
 		  my $name = $H5obj->filename;
 		  $hl->add($name, -text => $name, -data => $H5obj, -itemtype => 'imagetext');
 		  $hl->setmode($name => 'close');
@@ -132,6 +139,8 @@ sub new{
 
 		  $self->{hl} = $hl;
 		
+		  # Set Default dataDisplaySub
+		  $self->{dataDisplaySub} = sub{ print $_[0]};
 
 
 	 }
@@ -237,5 +246,66 @@ sub More
 }
 
 
-  
+=head2 dataDisplaySubSet
+
+=for ref
+
+Set the dataDisplaySub data member.
+
+B<Usage:>
+
+=for usage
+
+ # Data Display sub to call when a dataset is double-clicked
+ my $dataDisplay = sub{ my $data = $_[0]; print "I'm Displaying This $data\n";};
+ $tkview->dataDisplaySubSet($dataDisplay);
+
+
+The dataDisplaySub data member is a perl sub ref that is called when a dataset is double-clicked. 
+This data member is initially set to just print the dataset's data to the command line. Using the L<dataDisplaySubSet>
+method, different actions for displaying the data can be "plugged-in".
+
+=cut
+
+sub dataDisplaySubSet {
+	my ($self, $subref) = @_;
+
+	$self->{dataDisplaySub} = $subref;
+}
+
+#-------------------------------------------------------------------
+
+=head2 activateCmd
+
+=for ref
+
+Internal Display method invoked whenever a tree element is activated (i.e.
+double-clicked). This method does nothing unless a dataset element has been
+selected. It that cases it calls $self->dataDisplaySub with the data.
+
+
+=cut
+
+sub activateCmd{
+
+	my $self = shift;   
+
+	my ($name) = (@_);  # Name of the hlist element that was selected
+	
+
+	return unless($name =~ /\01_Dset(.+)$/);  # only process datasets
+	my $datasetName = $1;
+	my $hlist = $self->{hl};
+
+	
+	my $group = $hlist->entrycget($name,'-data');
+	my $PDL = $group->dataset($datasetName)->get;
+
+	my $dataDisplaySub = $self->{dataDisplaySub};
+	&$dataDisplaySub($PDL)
+
+}
+
+
+
 1;

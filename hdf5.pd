@@ -604,6 +604,67 @@ herr_t getName_if_Dset(hid_t loc_id, const char *name, void *opdata)
      }
     return 0;
  } 
+ 
+
+/*
+ * Operator function to get number of groups in a particular location
+ */
+herr_t incIfGroup(hid_t loc_id, const char *name, void *opdata)
+{
+    H5G_stat_t statbuf;
+    unsigned int * groupCount;
+
+    groupCount = (unsigned int *) opdata; 
+    /*
+     * Get type of the object and increment *groupCount
+     *  if it is a group
+     * The name of the object is passed to this function by 
+     * the Library. Some magic :-)
+     */
+    H5Gget_objinfo(loc_id, name, FALSE, &statbuf);
+    if( statbuf.type == H5G_GROUP){
+          (*groupCount)++;
+    }       
+    return 0;
+ }
+
+/*
+ * Operator function to fill up char array of group names
+ *
+ *  opdata is a pointer to an Array of strings (i.e. 2D char array)
+ */
+herr_t getName_if_Group(hid_t loc_id, const char *name, void *opdata)
+{
+    H5G_stat_t statbuf;
+    char ** groupName;
+  
+    char *** tempptr;
+    tempptr = (char ***) opdata;
+
+    groupName =  *tempptr; 
+    /*
+     * Get type of the object.
+     *  If it is a group, get allocate space for it at *groupName
+     *  Increment *tempptr so we will be looking at the next name space when
+     *  this function is called again.
+     *
+     *  Note: The calling function must take care of freeing memory allocateed
+     *        
+     */
+    H5Gget_objinfo(loc_id, name, FALSE, &statbuf);
+    if( statbuf.type == H5G_GROUP){
+          
+         *groupName = (char *) malloc( (strlen(name)+1) * sizeof(char));
+         if( *groupName == NULL){
+            printf("PDL::HDF5; Out of Memory in getName_if_Group\n");
+            exit(1);
+         }
+
+         strcpy(*groupName,name);
+         (*tempptr)++;
+     }
+    return 0;
+ } 
 EOXS
 ###############################################################
 # XS Code that implements the HDF constants 
@@ -1590,6 +1651,59 @@ PPCODE:
 		}
 
 		free(datasetNames);
+	}
+
+
+# Code to get the number of groups in a group/file
+
+int
+H5GgetGroupCount( groupID, groupName )
+	hid_t	groupID
+	char * 	groupName
+CODE:
+	int	groupCount = 0;
+        H5Giterate(groupID, groupName, NULL, incIfGroup, &groupCount);
+	RETVAL = groupCount;
+OUTPUT:
+	RETVAL
+
+
+# Code to get the names of the groups in a group/file
+
+void
+H5GgetGroupNames( groupID, groupName )
+	hid_t	groupID
+	char * 	groupName
+PREINIT:
+	int	groupCount = 0;
+	char ** groupNames;     /* Array of group names */
+	char ** groupPtr;    /* temp pointer to groupnames */
+	int i; 	               /* Index variable */
+PPCODE:
+	/* Get the number of datasets */
+        H5Giterate(groupID, groupName, NULL, incIfGroup, &groupCount);
+	
+	if( groupCount > 0){ /* Groups found */
+		
+		/* Allocate Space  for array of strings */
+		groupNames = (char **) malloc( groupCount * sizeof(char *));
+		if( groupNames == NULL){
+			printf("PDL::HDF5; out of Memory in H5GgetGroupNames\n");
+			exit(1);
+		}
+ 
+		groupPtr = groupNames;
+
+		H5Giterate(groupID, groupName, NULL, getName_if_Group, &groupPtr);
+
+		EXTEND(SP, groupCount); /* Make room for results on the return stack */
+		for( i = 0; i< groupCount; i++){ /* Push Names onto return stack */
+		       /*  printf("Name found = '%s'\n",datasetNames[i]); */
+		       PUSHs(sv_2mortal(newSVpv(groupNames[i],0)));
+		       free(groupNames[i]); /* Release Memory */
+		}
+
+		free(groupNames);
 	}
 
 

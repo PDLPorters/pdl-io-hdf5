@@ -345,7 +345,7 @@ sub attrs {
 
 =for ref
 
-Get a list of all dataset names in a group
+Get a list of all dataset names in a group. (Relative to the current group)
 
 
 B<Usage:>
@@ -370,6 +370,38 @@ sub datasets {
 		
 	
 	return @totalDatasets;
+  
+}
+
+=head2 groups
+
+=for ref
+
+Get a list of all group names in a group. (Relative to the current group)
+
+
+B<Usage:>
+
+=for usage
+
+   @groupNames = $group->groups;
+
+
+=cut
+
+sub groups {
+	my $self = shift;
+
+	my $groupID = $self->{groupID};
+	
+
+	my $groupName = $self->{name};
+	
+	my @totalgroups = PDL::HDF5::H5GgetGroupNames($groupID,$groupName);
+	
+		
+	
+	return @totalgroups;
   
 }
 

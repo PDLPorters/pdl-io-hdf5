@@ -1,7 +1,7 @@
 use PDL::HDF5;
 use PDL::HDF5::Group;
 
-print "1..7\n";  
+print "1..9\n";  
 
 my $testNo = 1;
 
@@ -39,6 +39,26 @@ ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 my @datasets = $group->datasets;
 
 ok($testNo++, scalar(@datasets) == 0 );
+
+# Create another group
+my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', filename => "newFile.hd5",
+					fileID => $hdfobj->{fileID});
+
+# open the root group
+my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', filename => "newFile.hd5",
+					fileID => $hdfobj->{fileID});
+
+# Get a list of groups
+my @groups = $rootGroup->groups;
+
+# print "Root group has these groups '".join(",",sort @groups)."'\n";
+ok($testNo++, join(",",sort @groups) eq 'dude,dude2' );
+
+
+# Get a list of groups in group2 (should be none)
+@groups = $group2->groups;
+
+ok($testNo++, scalar(@groups) == 0 );
 
 unlink("newfile.hd5");
 

@@ -187,7 +187,7 @@ sub attrSet {
 		
 		# Create Null-Terminated String Type 
 		$typeID = PDL::HDF5::H5Tcopy(PDL::HDF5::H5T_C_S1());
-		PDL::HDF5::H5Tset_size($typeID, length($value)); # make legth of type eaual to length of $value
+		PDL::HDF5::H5Tset_size($typeID, length($value) || 1 ); # make legth of type eaual to length of $value or 1 if zero
 		$dataspaceID = PDL::HDF5::H5Screate_simple(0, 0, 0);
 
 		#Note: If a attr already exists, then it will be deleted an re-written

@@ -200,6 +200,147 @@ sub new {
   bless $self, $type;
 }
 
+
+
+=head2 group
+
+=for ref
+
+Open or create a group in the root "/" group (i.e. top level)
+of the HDF5 file.
+
+
+B<Usage:>
+
+=for usage
+
+   $HDFfile->group("groupName");
+   
+   
+Returns undef on failure, 1 on success.
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->attrSet( 'attr1' => 'attr1Value',
+				 'attr2' => 'attr2 value', 
+				 .
+				 .
+				 .
+				);
+
+
+=cut
+
+=head2 attrSet
+
+=for ref
+
+Set the value of an attribute(s) in the root '/' group of the file.
+
+Currently the only attribute types supported are null-terminated strings.
+
+B<Usage:>
+
+=for usage
+
+   $HDFfile->attrSet( 'attr1' => 'attr1Value',
+   		    'attr2' => 'attr2 value', 
+		    .
+		    .
+		    .
+		   );
+
+Returns undef on failure, 1 on success.
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->attrSet( 'attr1' => 'attr1Value',
+				 'attr2' => 'attr2 value', 
+				 .
+				 .
+				 .
+				);
+
+
+=cut
+
+sub attrSet {
+	my $self = shift;
+
+	my %attrs = @_; # get atribute hash
+	
+	
+	return $self->group("/")->attrSet(%attrs);
+}
+
+
+=head2 attrDel
+
+=for ref
+
+Delete attribute(s) in the root "/" group of the file.
+
+B<Usage:>
+
+=for usage
+
+ $HDFfile->attrDel( 'attr1', 
+      		    'attr2',
+		    .
+		    .
+		    .
+		   );
+
+Returns undef on failure, 1 on success.
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->attrDel( 'attr1', 
+				 'attr2',
+				 .
+				 .
+				 .
+				);
+
+
+=cut
+
+sub attrDel {
+	my $self = shift;
+
+	my @attrs = @_; # get atribute names
+	
+	return $self->group("/")->attrDel(@attrs);
+
+}
+
+
+=head2 attrs
+
+=for ref
+
+Get a list of all attribute names in the root "/" group of the file.
+
+
+B<Usage:>
+
+=for usage
+
+   @attrs = $HDFfile->attrs;
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->attrs
+
+=cut
+
+sub attrs {
+	my $self = shift;
+
+	return $self->group("/")->attrs;
+
+ }
+
 =head2 DESTROY
 
 =for ref

@@ -841,7 +841,7 @@ sub allAttrValues{
 		my $grpAttrHash;  # attr hash for a particular group
 		
 		my $attr; # individual attr name
-		my $anyAttrSeen; # flag = 1 if we have seen any of the 
+		my $allAttrSeen; # flag = 0 if we have not seen all of the 
 				 # desired attributes in the current group
 				 
 		my $value;       # Current value of the @values array that we
@@ -853,20 +853,19 @@ sub allAttrValues{
 			$grpAttrHash = $attrIndex->{$group};
 
 			# Go thru each attribute
-			$anyAttrSeen = 0;
+			$allAttrSeen = 1;  # assume we will se all atributes, set to zero if we don't
 			$value = [];
 			foreach $attr(@attrs){
 				
 				if( defined($grpAttrHash->{$attr})){
 					push @$value, $grpAttrHash->{$attr};
-					$anyAttrSeen = 1;
 				}
 				else{
-					push @$value, ''; # current attr not there, push an empty string
+					$allAttrSeen = 0;
 				}
 		
 			}
-			push @values, $value if $anyAttrSeen; #add to values array if we got anything
+			push @values, $value if $allAttrSeen; #add to values array if we got anything
 		}
 
 		return @values;

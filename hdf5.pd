@@ -762,7 +762,7 @@ sub getGroupsByAttr{
 	
 	
 	# Generate groupIndex if not there yet
-	defined( $self->{groupIndex}{$compositeKey} ) || $self->_buildGroupIndex($compositeKey);
+	defined( $self->{groupIndex}{$compositeKey} ) || $self->_buildGroupIndex(@keys);
 
 	$groupIndex = $self->{groupIndex}{$compositeKey};
 

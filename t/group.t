@@ -1,7 +1,7 @@
 use PDL::HDF5;
 use PDL::HDF5::Group;
 
-print "1..3\n";  
+print "1..5\n";  
 
 my $testNo = 1;
 
@@ -18,10 +18,17 @@ my $group = new PDL::HDF5::Group( 'name'=> '/dude', filename => "newFile.hd5",
 					
 					
 # Set attribute for group
-ok($testNo++, $group->attrset( 'attr1' => 'dudeman', 'attr2' => 'What??'));
+ok($testNo++, $group->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
 
 # Try Setting attr for an existing attr
-ok($testNo++,$group->attrset( 'attr1' => 'dudeman23'));
+ok($testNo++,$group->attrSet( 'attr1' => 'dudeman23'));
+
+
+# Add a attribute and then delete it
+ok($testNo++, $group->attrSet( 'dummyAttr' => 'dummyman', 
+				'dummyAttr2' => 'dummyman'));
+				
+ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 
 unlink("newfile.hd5");
 

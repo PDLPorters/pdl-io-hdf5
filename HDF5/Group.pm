@@ -143,7 +143,7 @@ sub DESTROY {
 
 }
 
-=head2 attrset
+=head2 attrSet
 
 =for ref
 
@@ -155,7 +155,7 @@ B<Usage:>
 
 =for usage
 
-   $group->attrset( 'attr1' => 'attr1Value',
+   $group->attrSet( 'attr1' => 'attr1Value',
    		    'attr2' => 'attr2 value', 
 		    .
 		    .
@@ -166,7 +166,7 @@ Returns undef on failure, 1 on success.
 
 =cut
 
-sub attrset {
+sub attrSet {
 	my $self = shift;
 
 	my %attrs = @_; # get atribute hash
@@ -198,7 +198,7 @@ sub attrset {
 		$attrID = PDL::HDF5::H5Acreate($groupID, $key, $typeID, $dataspaceID, PDL::HDF5::H5P_DEFAULT());
 
 		if($attrID < 0 ){
-			carp "Error in ".__PACKAGE__." attrset; Can't create attribute '$key'\n";
+			carp "Error in ".__PACKAGE__." attrSet; Can't create attribute '$key'\n";
 
 			PDL::HDF5::H5Sclose($dataspaceID);
 			PDL::HDF5::H5Tclose($typeID); # Cleanup
@@ -207,7 +207,7 @@ sub attrset {
 		
 		# Write the attribute data.
 		if( PDL::HDF5::H5Awrite($attrID, $typeID, $value) < 0){
-			carp "Error in ".__PACKAGE__." attrset; Can't write attribute '$key'\n";
+			carp "Error in ".__PACKAGE__." attrSet; Can't write attribute '$key'\n";
 			PDL::HDF5::H5Aclose($attrID);
 			PDL::HDF5::H5Sclose($dataspaceID);
 			PDL::HDF5::H5Tclose($typeID); # Cleanup
@@ -226,6 +226,50 @@ sub attrset {
   
 }
 
+=head2 attrDel
+
+=for ref
+
+Delete attribute(s)
+
+B<Usage:>
+
+=for usage
+
+   $group->attrDel( 'attr1', 
+      		    'attr2',
+		    .
+		    .
+		    .
+		   );
+
+Returns undef on failure, 1 on success.
+
+=cut
+
+sub attrDel {
+	my $self = shift;
+
+	my @attrs = @_; # get atribute names
+	
+	my $groupID = $self->{groupID};
+	
+	my $attr;
+	my $rc; #Return code returned by H5Adelete
+	foreach $attr( @attrs ){
+		
+
+		# Note: We don't consider errors here as cause for aborting, we just
+		#  complain using carp
+		if( PDL::HDF5::H5Adelete($groupID, $attr) < 0){
+			carp "Error in ".__PACKAGE__." attrDel; Error Deleting attribute '$attr'\n";
+		}
+		
+	}
+	
+	return 1;
+  
+}
 
 
 

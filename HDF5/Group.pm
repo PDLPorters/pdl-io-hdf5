@@ -272,6 +272,73 @@ sub attrDel {
 }
 
 
+=head2 attrs
+
+=for ref
+
+Get a list of all attribute names in a group
+
+
+B<Usage:>
+
+=for usage
+
+   @attrs = $group->attrs;
+
+
+=cut
+
+sub attrs {
+	my $self = shift;
+
+	my $groupID = $self->{groupID};
+	
+	my $defaultMaxSize = 256; # default max size of a attribute name
+
+	my $noAttr = PDL::HDF5::H5Aget_num_attrs($groupID); # get the number of attributes
+
+	my $attrIndex = 0; # attribute Index
+
+	my @attrNames = ();
+	my $attributeID;
+	my $attrNameSize; # size of the attribute name
+	my $attrName;     # attribute name
+
+	# Go thru each attribute and get the name
+	for( $attrIndex = 0; $attrIndex < $noAttr; $attrIndex++){
+
+		$attributeID = PDL::HDF5::H5Aopen_idx($groupID, $attrIndex );
+
+		if( $attributeID < 0){
+			carp "Error in ".__PACKAGE__." attrs; Error Opening attribute number $attrIndex\n";
+			next;
+		}
+
+	      	#init attrname to 256 length string (Maybe this not necessary with
+		#  the typemap)
+		$attrName = ' ' x 256;
+		
+		# Get the name
+		$attrNameSize = PDL::HDF5::H5Aget_name($attributeID, 256, $attrName ); 
+
+		# If the name is greater than 256, try again with the proper size:
+		if( $attrNameSize > 256 ){
+			$attrName = ' ' x $attrNameSize;
+			$attrNameSize = PDL::HDF5::H5Aget_name($attributeID, $attrNameSize, $attrName ); 
+
+		}
+
+		push @attrNames, $attrName;
+
+		# Close the attr:
+		PDL::HDF5::H5Aclose($attributeID);
+	}
+
+
+	
+	return @attrNames;
+  
+}
 
 1;
 

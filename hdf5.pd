@@ -682,7 +682,7 @@ sub _buildGroupIndex{
 	
 		$attrIndexElement = $attrIndex->{$group};
 		
-		@attrValues = map defined($_) ? $_ : '',   @$attrIndexElement{@attrs}; # Groups with undefined attr will get a blank string for the value
+		@attrValues = map defined($_) ? $_ : '_undef_',   @$attrIndexElement{@attrs}; # Groups with undefined attr will get a '_undef_' string for the value
 		
 
 		# Use multi-dimensional array emulation for the hash

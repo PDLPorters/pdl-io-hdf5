@@ -119,7 +119,7 @@ $baseline =
         ]
     }
     attr1$;attr3 =>     {
-        dudeman23$; =>         [
+        dudeman23$;_undef_ =>         [
             /,
             /dude2,
             /mygroup,

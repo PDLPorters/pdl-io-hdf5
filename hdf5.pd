@@ -229,11 +229,11 @@ sub group {
 
 	my $name = $_[0]; # get the group name
 	
-	my $fileID = $self->{fileID};
-	my $filename = $self->{filename};
+	my $parentID = $self->{fileID};
+	my $parentName = $self->{filename};
 	
-	my $group =  new PDL::HDF5::Group( 'name'=> $name, filename => $filename,
-					fileID => $fileID );
+	my $group =  new PDL::HDF5::Group( 'name'=> $name, parentName => $parentName,
+					parentID => $parentID );
 
 }
 

@@ -43,6 +43,23 @@ ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
 my $group = $hdfobj->group("mygroup");
 
+
+# Create a dataset in the root group
+my $dataset = $hdfobj->dataset;
+					
+my $pdl = sequence(5,4);
+
+
+ok($testNo++, $dataset->set($pdl) );
+# print "pdl written = \n".$pdl."\n";
+
+
+my $pdl2 = $dataset->get;
+# print "pdl read = \n".$pdl2."\n";
+
+ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+
+
 exit;		
 ##### Stopped Here ####
 			
@@ -62,7 +79,7 @@ ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 
 
 # Get list of attributes
-my @attrs = $group->attrs;
+@attrs = $group->attrs;
 ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
 # Get a list of datasets (should be none)

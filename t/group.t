@@ -19,8 +19,8 @@ unlink $filename if( -e $filename);
 my $hdfobj;
 ok($testNo++,$hdfobj = new PDL::HDF5("newFile.hd5"));
 
-my $group = new PDL::HDF5::Group( 'name'=> '/dude', filename => "newFile.hd5",
-					fileID => $hdfobj->{fileID});
+my $group = new PDL::HDF5::Group( 'name'=> '/dude', parentName => "newFile.hd5",
+					parentID => $hdfobj->{fileID});
 					
 					
 # Set attribute for group
@@ -47,12 +47,12 @@ my @datasets = $group->datasets;
 ok($testNo++, scalar(@datasets) == 0 );
 
 # Create another group
-my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', filename => "newFile.hd5",
-					fileID => $hdfobj->{fileID});
+my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', parentName => "newFile.hd5",
+					parentID => $hdfobj->{fileID});
 
 # open the root group
-my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', filename => "newFile.hd5",
-					fileID => $hdfobj->{fileID});
+my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', parentName => "newFile.hd5",
+					parentID => $hdfobj->{fileID});
 
 # Get a list of groups
 my @groups = $rootGroup->groups;

@@ -28,13 +28,13 @@ ID number given to the group by the HDF5 library
 
 Name of the group. (Absolute to the root group '/'. e.g. /maingroup/subgroup)
 
-=item fileID
+=item parentID
 
-fileID of the HDF file that owns this group.
+ID (fileID or groupID) of the HDF file/group that owns this group.
 
-=item filename
+=item parentName
 
-filename of the HDF file that owns this group
+Name of the HDF file or group that owns this group
 
 =back
 
@@ -55,11 +55,11 @@ B<Usage:>
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
 following syntax is used by the L<PDL::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Group( name => $name, filename => $filename, fileID => $fileID );
+   $a = new PDL::HDF5:Group( name => $name, parentName => $parentName, parentID => $parentID );
 	Args:
 	$name				Name of the group
-	$filename			Filename that owns this group
-	$fileID				FileID of the file that owns this group
+	$parentName			Filename that owns this group
+	$parentID				FileID of the file that owns this group
 
 =cut
 
@@ -69,7 +69,7 @@ sub new{
 	my %parms = @_;
 	my $self = {};
 
-	my @DataMembers = qw( name filename fileID );
+	my @DataMembers = qw( name parentName parentID );
 	my %DataMembers;
 	@DataMembers{ @DataMembers } = @DataMembers; # hash for quick lookup
 	# check for proper supplied names:
@@ -86,23 +86,23 @@ sub new{
 		$self->{$varName} = $parms{$varName};
 	}
 	
-	my $fileID = $self->{fileID};
-	my $filename = $self->{filename};
+	my $parentID = $self->{parentID};
+	my $parentName = $self->{parentName};
 	my $name = $self->{name};
 	my $groupID;
 
 	# Turn Error Reporting off for the following, so H5 lib doesn't complain
 	#  if the group isn't found.
 	PDL::HDF5::H5errorOff();
-	my $rc = PDL::HDF5::H5Gget_objinfo($fileID, $name,1,0);
+	my $rc = PDL::HDF5::H5Gget_objinfo($parentID, $name,1,0);
 	PDL::HDF5::H5errorOn();
 	# See if the group exists:
 	if(  $rc >= 0){ 
 		#Group Exists open it:
-		$groupID = PDL::HDF5::H5Gopen($fileID, $name);
+		$groupID = PDL::HDF5::H5Gopen($parentID, $name);
 	}
 	else{  # group didn't exist, create it:
-		$groupID = PDL::HDF5::H5Gcreate($fileID, $name, 0);
+		$groupID = PDL::HDF5::H5Gcreate($parentID, $name, 0);
 	}
 	# Try Opening the Group First (Assume it already exists)
 
@@ -139,7 +139,7 @@ sub DESTROY {
   my $self = shift;
 
   if( H5Gclose($self->{groupID}) < 0){
-	warn("Error closing HDF5 Group '".$self->{name}."' in file '".$self->{filename}."'\n");
+	warn("Error closing HDF5 Group '".$self->{name}."' in file '".$self->{parentName}."'\n");
   }
 
 }
@@ -372,6 +372,38 @@ sub datasets {
 	return @totalDatasets;
   
 }
+
+=head2 group
+
+=for ref
+
+Create a new group in an existing group.
+
+B<Usage:>
+
+=for usage
+
+   $newgroup = $oldgroup->group("newgroup");
+
+Returns undef on failure, 1 on success.
+
+=cut
+
+sub group {
+	my $self = shift;
+
+	my $name = $_[0]; # get the group name
+	
+	my $groupID = $self->{groupID}; # get the group name of the current group
+	my $parentName = $self->{parentName};
+	
+	my $group =  new PDL::HDF5::Group( 'name'=> $name, parentName => $parentName,
+					parentID => $parentID );
+
+}
+
+
+
 
 =head2 groups
 

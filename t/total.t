@@ -6,7 +6,7 @@ use PDL::Types;
 # Script to test the PDL::HDF5 objects together in the
 #   way they would normally be used
 #
-#  i.e. not the way they would normally be used as described
+#  i.e. the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
 print "1..29\n";  

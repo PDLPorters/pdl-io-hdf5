@@ -174,6 +174,19 @@ sub AddChildren
 
 		}
 
+		# Display Datasets next:
+		my @datasets;  # dataset names stored
+		@datasets = sort $data->datasets; # get list of datasets in the current group/file
+
+		my ($dataset, @dims);
+		foreach $dataset(@datasets){  # add each attribute to the display
+			@dims = $data->dataset($dataset)->dims;  # get the dims of the dataset
+			$text = "$dataset: Dims ".join(", ",@dims);
+			$hl->add("$path\01_Dset$dataset", -image => $self->{cubeImage}, -text => $text, -data => $data);
+
+		}
+
+
 		# Display Groups Next
 
 		my @groups;  # groups stored
@@ -189,17 +202,6 @@ sub AddChildren
 		}
 
 
-		# Display Datasets next:
-		my @datasets;  # dataset names stored
-		@datasets = sort $data->datasets; # get list of datasets in the current group/file
-
-		my ($dataset, @dims);
-		foreach $dataset(@datasets){  # add each attribute to the display
-			@dims = $data->dataset($dataset)->dims;  # get the dims of the dataset
-			$text = "Dataset: Dims ".join(", ",@dims);
-			$hl->add("$path\01_Dset$dataset", -image => $self->{cubeImage}, -text => $text, -data => $data);
-
-		}
 
 
 

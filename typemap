@@ -25,7 +25,7 @@ hbool_t			T_IV
 INPUT
 
 T_PVI
-	$var = ($type)SvPV($arg,na)
+	$var = ($type)SvPV($arg,PL_na)
 T_PDLB
 	$var = (unsigned char *)(PDL->SvPDLV($arg)->data)
 T_PDLS

@@ -7,7 +7,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..20\n";  
+print "1..21\n";  
 
 my $testNo = 1;
 

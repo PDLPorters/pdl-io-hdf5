@@ -195,7 +195,7 @@ B<Usage:>
 
 sub set{
 
-	$self = shift;
+	my $self = shift;
 
 	my ($pdl) = @_;
 
@@ -344,7 +344,7 @@ $H5T_STRING = PDL::IO::HDF5::H5T_STRING();  #HDF5 string type
 
 sub get{
 
-	$self = shift;
+	my $self = shift;
 
 	my $pdl;
 
@@ -504,7 +504,7 @@ B<Usage:>
 
 sub dims{
 
-	$self = shift;
+	my $self = shift;
 
 	my $parent = $self->{parent};
 	my $groupID = $parent->IDget;

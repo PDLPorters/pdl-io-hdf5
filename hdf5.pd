@@ -1937,8 +1937,11 @@ EOXS
 
 pp_addpm( {At => Top}, <<'EOPM');
 
-use PDL::HDF5::Group;
+use PDL::Lite;
+use PDL::Char;
 
+
+use PDL::HDF5::Group;
 
 # Require needed here becuase dataset uses some of the XS 
 #  calls that are defined in PDL::HDF5 (like PDL::HDF5::H5T_NATIVE_CHAR() )

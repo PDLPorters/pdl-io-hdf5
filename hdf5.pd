@@ -90,6 +90,7 @@ added later.)
 						      # in the root group.
   my @datasets =  $existingFile->datasets;            # get a list of all datasets in the root '/' group
   my @datasets =  $group->datasets;                   # get a list of all datasets in a group
+  @dims = $dataset->dims;                             # get a list of dimensions for the dataset
   $pdl = $dataset->get();                             # Get the array data in the dataset
   $dataset->set($pdl);                                # Set the array data in the dataset
   my $attrValue = $dataset->attrGet('AttrName');      # Get attribute value for a dataset
@@ -207,6 +208,29 @@ sub new {
 }
 
 
+
+=head2 filename
+
+=for ref
+
+Get the filename for the HDF5 file
+
+
+B<Usage:>
+
+=for usage
+
+   my $filename = $HDFfile->filename;
+   
+   
+=cut
+
+sub filename {
+	my $self = shift;
+
+	return $self->{filename};
+
+}
 
 =head2 group
 

@@ -262,7 +262,7 @@ sub set{
 
 =for ref
 
-Rdad data from a HDF5 dataset to a PDL
+Get data from a HDF5 dataset to a PDL
 
 B<Usage:>
 
@@ -415,7 +415,63 @@ sub get{
 }
 
 
+=head2 dims
 
+=for ref
+
+Get the dims for a HDF5 dataset. For example, a 3 x 4 array would return a perl array
+(3,4);
+
+B<Usage:>
+
+=for usage
+
+ @pdl = $dataset->dims;    # Get an array of dims. 
+
+=cut
+
+
+sub dims{
+
+	$self = shift;
+
+	my $groupID = $self->{groupID};
+	my $datasetID = $self->{datasetID};
+	my $name = $self->{name};
+
+
+	my $dataspaceID = PDL::HDF5::H5Dget_space($datasetID);
+	if( $dataspaceID < 0 ){
+		carp("Can't Open Dataspace in ".__PACKAGE__.":get\n");
+		return undef;
+	}
+
+
+	# Get the number of dims:
+	my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+ 	if( $Ndims < 0 ){
+		carp("Can't Get Number of Dims in  Dataspace in ".__PACKAGE__.":get\n");
+		return undef;
+	}
+
+
+	# Initialize Dims structure:
+	my @dims = ( 0..($Ndims-1)); 
+        my $dims = PDL::HDF5::packList(@dims);
+	my $dims2 = PDL::HDF5::packList(@dims);
+
+        my $rc = PDL::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
+
+	if( $rc != $Ndims){
+		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	}
+
+	@dims = PDL::HDF5::unpackList($dims); # get the dim sizes from the binary structure
+
+	return reverse @dims;  # return dims in the order that PDL will store them
+}
 
 =head2 attrSet
 

@@ -7,7 +7,7 @@ use PDL::HDF5;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..19\n";  
+print "1..20\n";  
 
 my $testNo = 1;
 
@@ -56,6 +56,10 @@ my $pdl2 = $dataset->get;
 
 ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 
+
+my @dims = $dataset->dims;
+
+ok( $testNo++, join(", ",@dims) eq '5, 4' );
 
 # Get a list of datasets (should be one)
 my @datasets = $hdfobj->datasets;

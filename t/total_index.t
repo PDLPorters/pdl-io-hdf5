@@ -7,7 +7,7 @@ use PDL::Types;
 
 use Data::Dumper;
 
-print "1..4\n";  
+print "1..5\n";  
 
 my $testNo = 1;
 
@@ -88,6 +88,18 @@ q!$VAR1 = [
 $result = Dumper(\@values);
 ok($testNo++,$baseline eq $result );
 
+my @names = $hdfobj->allAttrNames;
+
+$baseline = 
+q!$VAR1 = [
+          'attr1',
+          'attr2'
+        ];
+!;
+
+# print Dumper(\@names);
+$result = Dumper(\@names);
+ok($testNo++,$baseline eq $result );
 
 
 print "completed\n";

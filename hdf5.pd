@@ -597,7 +597,7 @@ sub clearAttrIndex{
 
 =for ref
 
-Returns information about attribute defined in the HDF5 datafile.
+Returns information about group attributes defined in the HDF5 datafile.
 
 B<Usage:>
 
@@ -688,6 +688,53 @@ sub allAttrValues{
 		
 }
 
+=head2 allAttrNames
+
+=for ref
+
+Returns a sorted list of all the group attribute names that are defined
+in the file.
+
+B<Usage:>
+
+=for usage
+
+ my @attrNames = $hdf5obj->allAttrNames;
+
+=cut
+
+sub allAttrNames{
+
+	my $self = shift;
+	
+
+	# Generate attrIndex if not there yet
+	defined( $self->{attrIndex}) || $self->_buildAttrIndex;
+	
+	my $attrIndex = $self->{attrIndex};
+
+
+
+	my $group;
+
+	my %names;
+	my $grpAttrHash;  # attr hash for a particular group
+
+	my @currentNames;
+	# Go thru each group and look for instances of $attr
+	foreach $group( keys %$attrIndex){
+
+		$grpAttrHash = $attrIndex->{$group};
+		@currentNames = keys %$grpAttrHash;
+		@names{@currentNames} = @currentNames;
+		
+		
+	}
+
+	return sort keys %names;
+
+		
+}
 
 
 =head2 DESTROY

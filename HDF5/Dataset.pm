@@ -165,12 +165,24 @@ B<Usage:>
 #############################################################################
 # Mapping of PDL types to HDF5 types for writing to a dataset
 #
-%PDL_HDF5_TypeMapping = (
-	PDL::byte	=>	PDL::HDF5::H5T_NATIVE_CHAR(),
-	PDL::short	=> 	PDL::HDF5::H5T_NATIVE_SHORT(),
-	PDL::long	=> 	PDL::HDF5::H5T_NATIVE_LONG(),
-        PDL::float	=>	PDL::HDF5::H5T_NATIVE_FLOAT(),
-	PDL::double	=>	PDL::HDF5::H5T_NATIVE_DOUBLE(),
+#   Mapping of PDL types to what HDF5 calls them while we are dealing with them 
+#   outside of the HDF5 file.
+%PDLtoHDF5internalTypeMapping = (
+	$PDL::Types::PDL_B	=>	PDL::HDF5::H5T_NATIVE_CHAR(),
+	$PDL::Types::PDL_S	=> 	PDL::HDF5::H5T_NATIVE_SHORT(),
+	$PDL::Types::PDL_L	=> 	PDL::HDF5::H5T_NATIVE_LONG(),
+        $PDL::Types::PDL_F	=>	PDL::HDF5::H5T_NATIVE_FLOAT(),
+	$PDL::Types::PDL_D	=>	PDL::HDF5::H5T_NATIVE_DOUBLE(),
+);
+#   Mapping of PDL types to what types they are written to in the HDF5 file.
+#   For 64 Bit machines, we might need to modify this with some smarts to determine
+#   what is appropriate
+%PDLtoHDF5fileMapping = (
+	$PDL::Types::PDL_B	=>	PDL::HDF5::H5T_STD_I8BE(),
+	$PDL::Types::PDL_S	=> 	PDL::HDF5::H5T_STD_I16BE(),
+	$PDL::Types::PDL_L	=> 	PDL::HDF5::H5T_STD_I32BE(),
+        $PDL::Types::PDL_F	=>	PDL::HDF5::H5T_IEEE_F32BE(),
+	$PDL::Types::PDL_D	=>	PDL::HDF5::H5T_IEEE_F64BE(),
 );
 
 
@@ -188,19 +200,25 @@ sub set{
 
 	my $type = $pdl->get_datatype; # get PDL datatype
 
-	unless( defined($PDL_HDF5_TypeMapping{$type}) ){
+	unless( defined($PDLtoHDF5internalTypeMapping{$type}) ){
 		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
 		return undef;
 	}
-	my $hdf5_type = $PDL_HDF5_TypeMapping{$type};
+	my $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$type};
 
-	my @dims = $pdl->dims;
+	unless( defined($PDLtoHDF5fileMapping{$type}) ){
+		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+		return undef;
+	}	
+	my $hdf5Filetype = $PDLtoHDF5fileMapping{$type};
 
+	my @dims = reverse($pdl->dims); # HDF5 stores columns/rows in reverse order than pdl
+
+	
 	
         my $dims = PDL::HDF5::packList(@dims);
    		
- 					   
-	# 	
+	
 	my $dataspaceID = PDL::HDF5::H5Screate_simple(scalar(@dims), $dims , $dims);
         if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":set\n");
@@ -210,8 +228,8 @@ sub set{
 	if( $datasetID == 0){  # Dataset not created yet
 	
 	       # /* Create the dataset. */
-		$datasetID = PDL::HDF5::H5Dcreate($groupID, $name, $hdf5_type, $dataspaceID, 
-                H5P_DEFAULT());
+		$datasetID = PDL::HDF5::H5Dcreate($groupID, $name, $hdf5Filetype, $dataspaceID, 
+                PDL::HDF5::H5P_DEFAULT());
 		if( $datasetID < 0){
 			carp("Can't Create Dataspace in ".__PACKAGE__.":set\n");
 			return undef;
@@ -222,7 +240,8 @@ sub set{
 	# Write the actual data:
         $data = ${$pdl->get_dataref};
 	
-	if( PDL::HDF5::H5Dwrite($datasetID, $hdf5_type, PDL::HDF5::H5S_ALL, PDL::HDF5::H5S_ALL, PDL::HDF%::H5P_DEFAULT,
+
+	if( PDL::HDF5::H5Dwrite($datasetID, $internalhdf5_type, PDL::HDF5::H5S_ALL(), PDL::HDF5::H5S_ALL(), PDL::HDF5::H5P_DEFAULT(),
 		$data) < 0 ){ 
 
 		carp("Error Writing to dataset in ".__PACKAGE__.":set\n");

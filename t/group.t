@@ -7,7 +7,7 @@ use PDL::HDF5::Dataset;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..9\n";  
+print "1..10\n";  
 
 my $testNo = 1;
 
@@ -68,13 +68,14 @@ ok($testNo++, scalar(@groups) == 0 );
 
 
 # Create a dataset in the root group
-my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupname => "/",
-					groupID => $rootGroup->{groupID});
+my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', groupname => "dude",
+					groupID => $group->{groupID});
 					
 my $pdl = sequence(5,4);
 
-$dataset->set($pdl);
 
+ok($testNo++, $dataset->set($pdl) );
+# print "pdl = \n".$pdl."\n";
 
 
 unlink("newfile.hd5");

@@ -86,9 +86,9 @@ $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
 
-$package = ["hdf5.pd",HDF5,PDL::HDF5];
+$package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 WriteMakefile(
-	      'NAME'  	     => 'PDL::HDF5',
+	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$define_bool -g",  
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 

@@ -1,12 +1,12 @@
 
-# Demo script using PDL::HDF5 and Tk to show an HDF5 file structure
+# Demo script using PDL::IO::HDF5 and Tk to show an HDF5 file structure
 #
 
 
 
  use Tk;
- use PDL::HDF5::tkview;
- use PDL::HDF5;
+ use PDL::IO::HDF5::tkview;
+ use PDL::IO::HDF5;
  use Tk::Balloon;
 
 
@@ -20,9 +20,9 @@
 
  my $b = $mw->Balloon;
  
- my $h5 = new PDL::HDF5($filename);  # open HDF5 file object
+ my $h5 = new PDL::IO::HDF5($filename);  # open HDF5 file object
 
- my $tkview = new PDL::HDF5::tkview( $mw, $h5);
+ my $tkview = new PDL::IO::HDF5::tkview( $mw, $h5);
  
 
 my $tree = $tkview->{hl};

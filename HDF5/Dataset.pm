@@ -1,20 +1,20 @@
-package PDL::HDF5::Dataset;
+package PDL::IO::HDF5::Dataset;
 
 use Carp;
 
 =head1 NAME
 
-PDL::HDF5::Dataset - PDL::HDF5 Helper Object representing HDF5 datasets.
+PDL::IO::HDF5::Dataset - PDL::IO::HDF5 Helper Object representing HDF5 datasets.
 
 =head1 DESCRIPTION
 
-This is a helper-object used by PDL::HDF5 to interface with HDF5 format's dataset objects.
+This is a helper-object used by PDL::IO::HDF5 to interface with HDF5 format's dataset objects.
 Information on the HDF5 Format can be found
 at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
 
 =head1 SYNOPSIS
 
-See L<PDL::HDF5>
+See L<PDL::IO::HDF5>
 
 =head1 MEMBER DATA
 
@@ -34,7 +34,7 @@ Ref to parent object (group) that owns this dateset.
 
 =item fileObj
 
-Ref to the L<PDL::HDF5> object that owns this object.
+Ref to the L<PDL::IO::HDF5> object that owns this object.
 
 
 =back
@@ -47,16 +47,16 @@ Ref to the L<PDL::HDF5> object that owns this object.
 
 =for ref
 
-PDL::HDF5::Dataset Constructor - creates new object
+PDL::IO::HDF5::Dataset Constructor - creates new object
 
 B<Usage:>
 
 =for usage
 
 This object will usually be created using the calling format detailed in the L<SYNOPSIS>. The 
-following syntax is used by the L<PDL::HDF5> object to build the object.
+following syntax is used by the L<PDL::IO::HDF5> object to build the object.
    
-   $a = new PDL::HDF5:Dataset( name => $name, parent => $parent, 
+   $a = new PDL::IO::HDF5:Dataset( name => $name, parent => $parent, 
    				fileObj => $fileObj);
 	Args:
 	$name				Name of the dataset
@@ -99,13 +99,13 @@ sub new{
 	#####
 	# Turn Error Reporting off for the following, so H5 lib doesn't complain
 	#  if the group isn't found.
-	PDL::HDF5::H5errorOff();
-	my $rc = PDL::HDF5::H5Gget_objinfo($groupID, $name,1,0);
-	PDL::HDF5::H5errorOn();
+	PDL::IO::HDF5::H5errorOff();
+	my $rc = PDL::IO::HDF5::H5Gget_objinfo($groupID, $name,1,0);
+	PDL::IO::HDF5::H5errorOn();
 	# See if the dataset exists:
 	if(  $rc >= 0){ 
 		#DataSet Exists open it:
-		$datasetID = PDL::HDF5::H5Dopen($groupID, $name);
+		$datasetID = PDL::IO::HDF5::H5Dopen($groupID, $name);
 		if($datasetID < 0 ){
 			carp "Error Calling ".__PACKAGE__." Constuctor: Can't open existing dataset '$name'\n";
 			return undef;
@@ -130,7 +130,7 @@ sub new{
 
 =for ref
 
-PDL::HDF5::Dataset Destructor - Closes the dataset object
+PDL::IO::HDF5::Dataset Destructor - Closes the dataset object
 
 B<Usage:>
 
@@ -147,7 +147,7 @@ sub DESTROY {
   my $datasetID = $self->{ID};
   # print "In DataSet DEstroy\n";
 
-  if( $datasetID && (PDL::HDF5::H5Dclose($self->{ID}) < 0 )){
+  if( $datasetID && (PDL::IO::HDF5::H5Dclose($self->{ID}) < 0 )){
 	warn("Error closing HDF5 Dataset '".$self->{name}."' in file:group: '".$self->{filename}.":".$self->{group}."'\n");
   }
 
@@ -174,21 +174,21 @@ B<Usage:>
 #   Mapping of PDL types to what HDF5 calls them while we are dealing with them 
 #   outside of the HDF5 file.
 %PDLtoHDF5internalTypeMapping = (
-	$PDL::Types::PDL_B	=>	PDL::HDF5::H5T_NATIVE_CHAR(),
-	$PDL::Types::PDL_S	=> 	PDL::HDF5::H5T_NATIVE_SHORT(),
-	$PDL::Types::PDL_L	=> 	PDL::HDF5::H5T_NATIVE_LONG(),
-        $PDL::Types::PDL_F	=>	PDL::HDF5::H5T_NATIVE_FLOAT(),
-	$PDL::Types::PDL_D	=>	PDL::HDF5::H5T_NATIVE_DOUBLE(),
+	$PDL::Types::PDL_B	=>	PDL::IO::HDF5::H5T_NATIVE_CHAR(),
+	$PDL::Types::PDL_S	=> 	PDL::IO::HDF5::H5T_NATIVE_SHORT(),
+	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_NATIVE_LONG(),
+        $PDL::Types::PDL_F	=>	PDL::IO::HDF5::H5T_NATIVE_FLOAT(),
+	$PDL::Types::PDL_D	=>	PDL::IO::HDF5::H5T_NATIVE_DOUBLE(),
 );
 #   Mapping of PDL types to what types they are written to in the HDF5 file.
 #   For 64 Bit machines, we might need to modify this with some smarts to determine
 #   what is appropriate
 %PDLtoHDF5fileMapping = (
-	$PDL::Types::PDL_B	=>	PDL::HDF5::H5T_STD_I8BE(),
-	$PDL::Types::PDL_S	=> 	PDL::HDF5::H5T_STD_I16BE(),
-	$PDL::Types::PDL_L	=> 	PDL::HDF5::H5T_STD_I32BE(),
-        $PDL::Types::PDL_F	=>	PDL::HDF5::H5T_IEEE_F32BE(),
-	$PDL::Types::PDL_D	=>	PDL::HDF5::H5T_IEEE_F64BE(),
+	$PDL::Types::PDL_B	=>	PDL::IO::HDF5::H5T_STD_I8BE(),
+	$PDL::Types::PDL_S	=> 	PDL::IO::HDF5::H5T_STD_I16BE(),
+	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_STD_I32BE(),
+        $PDL::Types::PDL_F	=>	PDL::IO::HDF5::H5T_IEEE_F32BE(),
+	$PDL::Types::PDL_D	=>	PDL::IO::HDF5::H5T_IEEE_F64BE(),
 );
 
 
@@ -214,8 +214,8 @@ sub set{
 		@dims = $pdl->dims;
 		my $length = shift @dims; # String length is the first dim of the PDL for PDL::Char
 		# Create Null-Terminated String Type 
-		$internalhdf5_type = PDL::HDF5::H5Tcopy(PDL::HDF5::H5T_C_S1());
-		PDL::HDF5::H5Tset_size($internalhdf5_type, $length ); # make legth of type eaual to strings
+		$internalhdf5_type = PDL::IO::HDF5::H5Tcopy(PDL::IO::HDF5::H5T_C_S1());
+		PDL::IO::HDF5::H5Tset_size($internalhdf5_type, $length ); # make legth of type eaual to strings
 		$hdf5Filetype =  $internalhdf5_type; # memory and file storage will be the same type
 		
 		@dims = reverse(@dims);  # HDF5 stores columns/rows in reverse order than pdl
@@ -244,10 +244,10 @@ sub set{
 
 	
 	
-        my $dims = PDL::HDF5::packList(@dims);
+        my $dims = PDL::IO::HDF5::packList(@dims);
    		
 	
-	my $dataspaceID = PDL::HDF5::H5Screate_simple(scalar(@dims), $dims , $dims);
+	my $dataspaceID = PDL::IO::HDF5::H5Screate_simple(scalar(@dims), $dims , $dims);
         if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":set\n");
 		return undef;
@@ -256,8 +256,8 @@ sub set{
 	if( $datasetID == 0){  # Dataset not created yet
 	
 	       # /* Create the dataset. */
-		$datasetID = PDL::HDF5::H5Dcreate($groupID, $name, $hdf5Filetype, $dataspaceID, 
-                PDL::HDF5::H5P_DEFAULT());
+		$datasetID = PDL::IO::HDF5::H5Dcreate($groupID, $name, $hdf5Filetype, $dataspaceID, 
+                PDL::IO::HDF5::H5P_DEFAULT());
 		if( $datasetID < 0){
 			carp("Can't Create Dataspace in ".__PACKAGE__.":set\n");
 			return undef;
@@ -269,7 +269,7 @@ sub set{
         $data = ${$pdl->get_dataref};
 	
 
-	if( PDL::HDF5::H5Dwrite($datasetID, $internalhdf5_type, PDL::HDF5::H5S_ALL(), PDL::HDF5::H5S_ALL(), PDL::HDF5::H5P_DEFAULT(),
+	if( PDL::IO::HDF5::H5Dwrite($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5P_DEFAULT(),
 		$data) < 0 ){ 
 
 		carp("Error Writing to dataset in ".__PACKAGE__.":set\n");
@@ -279,7 +279,7 @@ sub set{
 	
 
 	# /* Terminate access to the data space. */
-	carp("Can't close Dataspace in ".__PACKAGE__.":set\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+	carp("Can't close Dataspace in ".__PACKAGE__.":set\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 
 	return 1;
 
@@ -304,17 +304,17 @@ to the following table.
 
  HDF5 File Type				PDL Type
  ------------------------               -----------------
- PDL::HDF5::H5T_C_S1()		=>      PDL::Char Object    (Special Case for Char Strings)
- PDL::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B
- PDL::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
- PDL::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
- PDL::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
- PDL::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
- PDL::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
- PDL::HDF5::H5T_IEEE_F32BE()	=>	$PDL::Types::PDL_F,
- PDL::HDF5::H5T_IEEE_F32LE()	=>	$PDL::Types::PDL_F,
- PDL::HDF5::H5T_IEEE_F64BE()	=>	$PDL::Types::PDL_D,
- PDL::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
+ PDL::IO::HDF5::H5T_C_S1()	=>      PDL::Char Object    (Special Case for Char Strings)
+ PDL::IO::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B
+ PDL::IO::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
+ PDL::IO::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
+ PDL::IO::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
+ PDL::IO::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
+ PDL::IO::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
+ PDL::IO::HDF5::H5T_IEEE_F32BE()=>	$PDL::Types::PDL_F,
+ PDL::IO::HDF5::H5T_IEEE_F32LE()=>	$PDL::Types::PDL_F,
+ PDL::IO::HDF5::H5T_IEEE_F64BE()=>	$PDL::Types::PDL_D,
+ PDL::IO::HDF5::H5T_IEEE_F64LE()=>	$PDL::Types::PDL_D
 
 For HDF5 File types not in this table, this method will attempt to
 map it to the default PDL type PDL_D.
@@ -328,19 +328,19 @@ map it to the default PDL type PDL_D.
 #   For 64 Bit machines, we might need to modify this with some smarts to determine
 #   what is appropriate
 %HDF5toPDLfileMapping = (
-	 PDL::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B,
-	 PDL::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
-	 PDL::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
-	 PDL::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
-	 PDL::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
-	 PDL::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
-	 PDL::HDF5::H5T_IEEE_F32BE()	=>	$PDL::Types::PDL_F,
-	 PDL::HDF5::H5T_IEEE_F32LE()	=>	$PDL::Types::PDL_F,
-	 PDL::HDF5::H5T_IEEE_F64BE()	=>	$PDL::Types::PDL_D,
-	 PDL::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
+	 PDL::IO::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B,
+	 PDL::IO::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
+	 PDL::IO::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
+	 PDL::IO::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
+	 PDL::IO::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
+	 PDL::IO::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
+	 PDL::IO::HDF5::H5T_IEEE_F32BE()	=>	$PDL::Types::PDL_F,
+	 PDL::IO::HDF5::H5T_IEEE_F32LE()	=>	$PDL::Types::PDL_F,
+	 PDL::IO::HDF5::H5T_IEEE_F64BE()	=>	$PDL::Types::PDL_D,
+	 PDL::IO::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
 );
 
-$H5T_STRING = PDL::HDF5::H5T_STRING();  #HDF5 string type
+$H5T_STRING = PDL::IO::HDF5::H5T_STRING();  #HDF5 string type
 
 sub get{
 
@@ -362,19 +362,19 @@ sub get{
 					# return PDL::Char
 
 	# Get the HDF5 file datatype;
-        my $HDF5type = PDL::HDF5::H5Dget_type($datasetID );
+        my $HDF5type = PDL::IO::HDF5::H5Dget_type($datasetID );
 	unless( $HDF5type >= 0 ){
 		carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 Dataset type.\n";
 		return undef;
 	}
 
 	# Check for string type:
-	if( PDL::HDF5::H5Tget_class($HDF5type ) == $H5T_STRING ){  # String type
+	if( PDL::IO::HDF5::H5Tget_class($HDF5type ) == $H5T_STRING ){  # String type
 
-		$stringSize = PDL::HDF5::H5Tget_size($HDF5type);
+		$stringSize = PDL::IO::HDF5::H5Tget_size($HDF5type);
 		unless( $stringSize >= 0 ){
 			carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 String Datatype Size.\n";
-			carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+			carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 			return undef;
 		}
 
@@ -390,7 +390,7 @@ sub get{
 		
 		my $defaultType;
 		foreach $defaultType( keys %HDF5toPDLfileMapping){
-			if( PDL::HDF5::H5Tequal($defaultType,$HDF5type) > 0){
+			if( PDL::IO::HDF5::H5Tequal($defaultType,$HDF5type) > 0){
 				$PDLtype = $HDF5toPDLfileMapping{$defaultType};
 				last;
 			}
@@ -405,39 +405,39 @@ sub get{
 		$internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
 	}
 
-	my $dataspaceID = PDL::HDF5::H5Dget_space($datasetID);
+	my $dataspaceID = PDL::IO::HDF5::H5Dget_space($datasetID);
 	if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":get\n");
-		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 		return undef;
 	}
 
 
 	# Get the number of dims:
-	my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+	my $Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
  	if( $Ndims < 0 ){
 		carp("Can't Get Number of Dims in  Dataspace in ".__PACKAGE__.":get\n");
-		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
 
 
 	# Initialize Dims structure:
 	my @dims = ( 0..($Ndims-1)); 
-        my $dims = PDL::HDF5::packList(@dims);
-	my $dims2 = PDL::HDF5::packList(@dims);
+        my $dims = PDL::IO::HDF5::packList(@dims);
+	my $dims2 = PDL::IO::HDF5::packList(@dims);
 
-        my $rc = PDL::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
+        my $rc = PDL::IO::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
 
 	if( $rc != $Ndims){
 		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
-		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
 
-	@dims = PDL::HDF5::unpackList($dims); # get the dim sizes from the binary structure
+	@dims = PDL::IO::HDF5::unpackList($dims); # get the dim sizes from the binary structure
 
 	$pdl = $ReturnType->null;
 	$pdl->set_datatype($PDLtype);
@@ -460,14 +460,14 @@ sub get{
 	my $data = pack("x$datasize"); # create empty space for the data
 
 	# Read the data:
-        $rc = PDL::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::HDF5::H5S_ALL(), PDL::HDF5::H5S_ALL(), 
-		   PDL::HDF5::H5P_DEFAULT(),
+        $rc = PDL::IO::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), 
+		   PDL::IO::HDF5::H5P_DEFAULT(),
                     $data);
 
 	if( $rc < 0 ){
 		carp("Error reading data from file in ".__PACKAGE__.":get\n");
-		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
 
@@ -477,10 +477,10 @@ sub get{
 
 
 	# /* Terminate access to the data space. */
-	carp("Can't close Dataspace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+	carp("Can't close Dataspace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 
 	# /* Terminate access to the data type. */
-	carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+	carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 	return $pdl;
 
 }
@@ -512,7 +512,7 @@ sub dims{
 	my $name = $self->{name};
 
 
-	my $dataspaceID = PDL::HDF5::H5Dget_space($datasetID);
+	my $dataspaceID = PDL::IO::HDF5::H5Dget_space($datasetID);
 	if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":get\n");
 		return undef;
@@ -520,7 +520,7 @@ sub dims{
 
 
 	# Get the number of dims:
-	my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+	my $Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
  	if( $Ndims < 0 ){
 		carp("Can't Get Number of Dims in  Dataspace in ".__PACKAGE__.":get\n");
 		return undef;
@@ -529,18 +529,18 @@ sub dims{
 
 	# Initialize Dims structure:
 	my @dims = ( 0..($Ndims-1)); 
-        my $dims = PDL::HDF5::packList(@dims);
-	my $dims2 = PDL::HDF5::packList(@dims);
+        my $dims = PDL::IO::HDF5::packList(@dims);
+	my $dims2 = PDL::IO::HDF5::packList(@dims);
 
-        my $rc = PDL::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
+        my $rc = PDL::IO::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
 
 	if( $rc != $Ndims){
 		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
-		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
 
-	@dims = PDL::HDF5::unpackList($dims); # get the dim sizes from the binary structure
+	@dims = PDL::IO::HDF5::unpackList($dims); # get the dim sizes from the binary structure
 
 	return reverse @dims;  # return dims in the order that PDL will store them
 }
@@ -592,40 +592,40 @@ sub attrSet {
 		$value = $attrs{$key};
 		
 		# Create Null-Terminated String Type 
-		$typeID = PDL::HDF5::H5Tcopy(PDL::HDF5::H5T_C_S1());
-		PDL::HDF5::H5Tset_size($typeID, length($value) || 1 ); # make legth of type eaual to length of $value or 1 if zero
-		$dataspaceID = PDL::HDF5::H5Screate_simple(0, 0, 0);
+		$typeID = PDL::IO::HDF5::H5Tcopy(PDL::IO::HDF5::H5T_C_S1());
+		PDL::IO::HDF5::H5Tset_size($typeID, length($value) || 1 ); # make legth of type eaual to length of $value or 1 if zero
+		$dataspaceID = PDL::IO::HDF5::H5Screate_simple(0, 0, 0);
 
 		#Note: If a attr already exists, then it will be deleted an re-written
 		# Delete the attribute first
-		PDL::HDF5::H5errorOff();  # keep h5 lib from complaining
-		PDL::HDF5::H5Adelete($datasetID, $key);
-		PDL::HDF5::H5errorOn();
+		PDL::IO::HDF5::H5errorOff();  # keep h5 lib from complaining
+		PDL::IO::HDF5::H5Adelete($datasetID, $key);
+		PDL::IO::HDF5::H5errorOn();
 
 		
-		$attrID = PDL::HDF5::H5Acreate($datasetID, $key, $typeID, $dataspaceID, PDL::HDF5::H5P_DEFAULT());
+		$attrID = PDL::IO::HDF5::H5Acreate($datasetID, $key, $typeID, $dataspaceID, PDL::IO::HDF5::H5P_DEFAULT());
 
 		if($attrID < 0 ){
 			carp "Error in ".__PACKAGE__." attrSet; Can't create attribute '$key'\n";
 
-			PDL::HDF5::H5Sclose($dataspaceID);
-			PDL::HDF5::H5Tclose($typeID); # Cleanup
+			PDL::IO::HDF5::H5Sclose($dataspaceID);
+			PDL::IO::HDF5::H5Tclose($typeID); # Cleanup
 			return undef;
 		}
 		
 		# Write the attribute data.
-		if( PDL::HDF5::H5Awrite($attrID, $typeID, $value) < 0){
+		if( PDL::IO::HDF5::H5Awrite($attrID, $typeID, $value) < 0){
 			carp "Error in ".__PACKAGE__." attrSet; Can't write attribute '$key'\n";
-			PDL::HDF5::H5Aclose($attrID);
-			PDL::HDF5::H5Sclose($dataspaceID);
-			PDL::HDF5::H5Tclose($typeID); # Cleanup
+			PDL::IO::HDF5::H5Aclose($attrID);
+			PDL::IO::HDF5::H5Sclose($dataspaceID);
+			PDL::IO::HDF5::H5Tclose($typeID); # Cleanup
 			return undef;
 		}
 		
 		# Cleanup
-		PDL::HDF5::H5Aclose($attrID);
-		PDL::HDF5::H5Sclose($dataspaceID);
-		PDL::HDF5::H5Tclose($typeID);
+		PDL::IO::HDF5::H5Aclose($attrID);
+		PDL::IO::HDF5::H5Sclose($dataspaceID);
+		PDL::IO::HDF5::H5Tclose($typeID);
 
 			
 	}
@@ -672,7 +672,7 @@ sub attrDel {
 
 		# Note: We don't consider errors here as cause for aborting, we just
 		#  complain using carp
-		if( PDL::HDF5::H5Adelete($datasetID, $attr) < 0){
+		if( PDL::IO::HDF5::H5Adelete($datasetID, $attr) < 0){
 			carp "Error in ".__PACKAGE__." attrDel; Error Deleting attribute '$attr'\n";
 		}
 		
@@ -709,7 +709,7 @@ sub attrs {
 	
 	my $defaultMaxSize = 256; # default max size of a attribute name
 
-	my $noAttr = PDL::HDF5::H5Aget_num_attrs($datasetID); # get the number of attributes
+	my $noAttr = PDL::IO::HDF5::H5Aget_num_attrs($datasetID); # get the number of attributes
 
 	my $attrIndex = 0; # attribute Index
 
@@ -721,7 +721,7 @@ sub attrs {
 	# Go thru each attribute and get the name
 	for( $attrIndex = 0; $attrIndex < $noAttr; $attrIndex++){
 
-		$attributeID = PDL::HDF5::H5Aopen_idx($datasetID, $attrIndex );
+		$attributeID = PDL::IO::HDF5::H5Aopen_idx($datasetID, $attrIndex );
 
 		if( $attributeID < 0){
 			carp "Error in ".__PACKAGE__." attrs; Error Opening attribute number $attrIndex\n";
@@ -733,19 +733,19 @@ sub attrs {
 		$attrName = ' ' x 256;
 		
 		# Get the name
-		$attrNameSize = PDL::HDF5::H5Aget_name($attributeID, 256, $attrName ); 
+		$attrNameSize = PDL::IO::HDF5::H5Aget_name($attributeID, 256, $attrName ); 
 
 		# If the name is greater than 256, try again with the proper size:
 		if( $attrNameSize > 256 ){
 			$attrName = ' ' x $attrNameSize;
-			$attrNameSize = PDL::HDF5::H5Aget_name($attributeID, $attrNameSize, $attrName ); 
+			$attrNameSize = PDL::IO::HDF5::H5Aget_name($attributeID, $attrNameSize, $attrName ); 
 
 		}
 
 		push @attrNames, $attrName;
 
 		# Close the attr:
-		PDL::HDF5::H5Aclose($attributeID);
+		PDL::IO::HDF5::H5Aclose($attributeID);
 	}
 
 
@@ -791,31 +791,31 @@ sub attrGet {
 		$attrValue = undef;
 		
 		# Open the Attribute
-		$attrID = PDL::HDF5::H5Aopen_name($datasetID, $attrName );
+		$attrID = PDL::IO::HDF5::H5Aopen_name($datasetID, $attrName );
 		unless( $attrID >= 0){
 			carp "Error Calling ".__PACKAGE__."::attrget: Can't open HDF5 Attribute name '$attrName'.\n";
 			next;
 		}			
 		 
 		# Open the data-space
-		$dataspaceID = PDL::HDF5::H5Aget_space($attrID);
+		$dataspaceID = PDL::IO::HDF5::H5Aget_space($attrID);
 		if( $dataspaceID < 0 ){
 			carp("Can't Open Dataspace for Attribute name '$attrName' in  ".__PACKAGE__."::attrget\n");
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}
 
 		# Check to see if the dataspace is simple
-		if( PDL::HDF5::H5Sis_simple($dataspaceID) < 0 ){
+		if( PDL::IO::HDF5::H5Sis_simple($dataspaceID) < 0 ){
 			carp("Warning: Non-Simple Dataspace for Attribute name '$attrName' ".__PACKAGE__."::attrget\n");
-			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}
 
 
 		# Get the number of dims:
-		my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+		my $Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
 		unless( $Ndims == 0){
 			if( $Ndims < 0 ){
 				carp("Warning: Can't Get Number of Dims in Attribute name '$attrName' Dataspace in ".__PACKAGE__.":get\n");
@@ -823,48 +823,48 @@ sub attrGet {
 			if( $Ndims > 0 ){
 				carp("Warning: Non-Scalar Dataspace for Attribute name '$attrName' Dataspace in ".__PACKAGE__.":get\n");
 			}			
-			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}
 
 
 		# Get the HDF5 dataset datatype;
-        	my $HDF5type = PDL::HDF5::H5Aget_type($attrID );
+        	my $HDF5type = PDL::IO::HDF5::H5Aget_type($attrID );
 		unless( $HDF5type >= 0 ){
 			carp "Error Calling ".__PACKAGE__."::attrGet: Can't get HDF5 Dataset type in Attribute name '$attrName'.\n";
-			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}
 		
 		# Get the size so we can allocate space for it
-		my $size = PDL::HDF5::H5Tget_size($HDF5type);
+		my $size = PDL::IO::HDF5::H5Tget_size($HDF5type);
 		unless( $size){
 			carp "Error Calling ".__PACKAGE__."::attrGet: Can't get HDF5 Dataset type size in Attribute name '$attrName'.\n";
-			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}
 		
 		#init attr value to the length of the type
 		$attrValue = ' ' x ($size);
 		
-		if( PDL::HDF5::H5Aread($attrID, $HDF5type, $attrValue) < 0 ){
+		if( PDL::IO::HDF5::H5Aread($attrID, $HDF5type, $attrValue) < 0 ){
 			carp "Error Calling ".__PACKAGE__."::attrGet: Can't read Attribute Value for Attribute name '$attrName'.\n";
-			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}			
 
 
 
 		# Cleanup
-		carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
-		carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
-		carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::HDF5::H5Aclose($attrID) < 0);
+		carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 
 
 	}

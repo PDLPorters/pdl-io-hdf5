@@ -1,11 +1,11 @@
 use PDL;
-use PDL::HDF5;
-use PDL::HDF5::Group;
-use PDL::HDF5::Dataset;
+use PDL::IO::HDF5;
+use PDL::IO::HDF5::Group;
+use PDL::IO::HDF5::Dataset;
 
 # Script to test the group/dataset object separately.
 #  i.e. not the way they would normally be used as described
-#  in the PDL::HDF5 synopsis
+#  in the PDL::IO::HDF5 synopsis
 
 print "1..17\n";  
 
@@ -17,9 +17,9 @@ my $filename = "newFile.hd5";
 unlink $filename if( -e $filename);
 
 my $hdfobj;
-ok($testNo++,$hdfobj = new PDL::HDF5("newFile.hd5"));
+ok($testNo++,$hdfobj = new PDL::IO::HDF5("newFile.hd5"));
 
-my $group = new PDL::HDF5::Group( name => '/dude', parent => $hdfobj,
+my $group = new PDL::IO::HDF5::Group( name => '/dude', parent => $hdfobj,
 					 fileObj => $hdfobj);
 					
 					
@@ -53,11 +53,11 @@ my @datasets = $group->datasets;
 ok($testNo++, scalar(@datasets) == 0 );
 
 # Create another group
-my $group2 = new PDL::HDF5::Group( 'name'=> '/dude2', parent => $hdfobj,
+my $group2 = new PDL::IO::HDF5::Group( 'name'=> '/dude2', parent => $hdfobj,
 				fileObj => $hdfobj);
 
 # open the root group
-my $rootGroup = new PDL::HDF5::Group( 'name'=> '/', parent => $hdfobj,
+my $rootGroup = new PDL::IO::HDF5::Group( 'name'=> '/', parent => $hdfobj,
 					fileObj => $hdfobj);
 
 # Get a list of groups
@@ -74,7 +74,7 @@ ok($testNo++, scalar(@groups) == 0 );
 
 
 # Create a dataset in the root group
-my $dataset = new PDL::HDF5::Dataset( 'name'=> 'data1', parent => $rootGroup,
+my $dataset = new PDL::IO::HDF5::Dataset( 'name'=> 'data1', parent => $rootGroup,
 					fileObj => $hdfobj);
 					
 my $pdl = sequence(5,4);

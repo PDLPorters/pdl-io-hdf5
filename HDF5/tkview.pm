@@ -1,8 +1,8 @@
 #!/usr/local/bin/perl -w
 
-package PDL::HDF5::tkview;
+package PDL::IO::HDF5::tkview;
 
-# Experimental module to view HDF5 using perl/tk and PDL::HDF5 modules
+# Experimental module to view HDF5 using perl/tk and PDL::IO::HDF5 modules
 
 use Tk 800;
 use Tk::Tree;
@@ -10,25 +10,25 @@ use IO::File;
 
 =head1 NAME
 
-PDL::HDF5::tkview - View HDF5 files using perl/tk and PDL::HDF5 modules
+PDL::IO::HDF5::tkview - View HDF5 files using perl/tk and PDL::IO::HDF5 modules
 
 =head1 DESCRIPTION
 
-This is a experimental object to view HDF5 files the PDL::HDF5 module.
+This is a experimental object to view HDF5 files the PDL::IO::HDF5 module.
 The HDF files are displayed in a tree structure using Tk::Tree
 
 =head1 SYNOPSIS
 
  use Tk;
- use PDL::HDF5::tkview
- use PDL::HDF5;
+ use PDL::IO::HDF5::tkview
+ use PDL::IO::HDF5;
 
  my $mw = MainWindow->new;
 
  
- my $h5 = new PDL::HDF5('datafile.h5');  # open HDF5 file object
+ my $h5 = new PDL::IO::HDF5('datafile.h5');  # open HDF5 file object
 
- my $tkview = new PDL::HDF5::tkview( $mw, $h5);
+ my $tkview = new PDL::IO::HDF5::tkview( $mw, $h5);
  
  MainLoop;
 
@@ -42,7 +42,7 @@ Tk window where the file structure is displayed.
 
 =item H5obj
 
-PDL::HDF5 Object 
+PDL::IO::HDF5 Object 
 
 =item hl
 
@@ -65,17 +65,17 @@ Tk Hlist object
 
 =for ref
 
-PDL::HDF5::tkview Constructor - creates new object
+PDL::IO::HDF5::tkview Constructor - creates new object
 
 B<Usage:>
 
 =for usage
 
- $tkview = new PDL::HDF5::tkview( $mw, $H5obj);
+ $tkview = new PDL::IO::HDF5::tkview( $mw, $H5obj);
  
     Where:
 	$mw     Tk window 
-	$H5obj	PDL::HDF5::Object
+	$H5obj	PDL::IO::HDF5::Object
 
 =cut
 

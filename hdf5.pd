@@ -17,7 +17,7 @@ pp_addhdr(<<'EOH');
 #define uchar unsigned char
 EOH
 
-pp_bless ("PDL::HDF5");
+pp_bless ("PDL::IO::HDF5");
 
 $VERSION = '0.1';
 
@@ -26,7 +26,7 @@ pp_addpm(<<'EOPM');
 
 =head1 NAME
 
-PDL::HDF5 - PDL Interface to the HDF5 Data Format.
+PDL::IO::HDF5 - PDL Interface to the HDF5 Data Format.
 
 
 =head1 DESCRIPTION
@@ -60,10 +60,10 @@ added later.)
 
 =head1 SYNOPSIS
 
-  use PDL::HDF5;
+  use PDL::IO::HDF5;
 
   # Files #######
-  my $newfile = new PDL::HDF5("newfile.hdf");         # create new hdf5 or open existing file.
+  my $newfile = new PDL::IO::HDF5("newfile.hdf");         # create new hdf5 or open existing file.
   my $attrValue = $existingFile->attrGet('AttrName'); # Get attribute value for file
   $existingFile->attSet('AttrName' => 'AttrValue');   # Set attribute value(s) for file
 
@@ -183,14 +183,14 @@ apply for the lower level groups.
 
 =for ref
 
-PDL::HDF5 constructor - creates PDL::HDF5 object for reading or 
+PDL::IO::HDF5 constructor - creates PDL::IO::HDF5 object for reading or 
 writing data.
 
 B<Usage:>
 
 =for usage
 
-   $a = new PDL::HDF5( $filename );
+   $a = new PDL::IO::HDF5( $filename );
    
 Arguments:  
 1) The name of the file.
@@ -204,7 +204,7 @@ B<Example:>
 
 =for example
 
-	$hdf5obj = new PDL::HDF5( "file.hdf" );
+	$hdf5obj = new PDL::IO::HDF5( "file.hdf" );
 
 =cut
 
@@ -327,7 +327,7 @@ sub group {
 	my $parentID = $self->{ID};
 	my $parentName = '';
 	
-	my $group =  new PDL::HDF5::Group( 'name'=> $name, parent => $self,
+	my $group =  new PDL::IO::HDF5::Group( 'name'=> $name, parent => $self,
 					 fileObj => $self  );
 
 }
@@ -972,7 +972,7 @@ sub nameGet{
 
 =for ref
 
-PDL::HDF5 Desctructor - Closes the HDF5 file
+PDL::IO::HDF5 Desctructor - Closes the HDF5 file
 
 B<Usage:>
 
@@ -1439,7 +1439,7 @@ herr_t getName_if_Dset(hid_t loc_id, const char *name, void *opdata)
           
          *datasetName = (char *) malloc( (strlen(name)+1) * sizeof(char));
          if( *datasetName == NULL){
-            printf("PDL::HDF5; Out of Memory in getName_if_Dset\n");
+            printf("PDL::IO::HDF5; Out of Memory in getName_if_Dset\n");
             exit(1);
          }
 
@@ -1500,7 +1500,7 @@ herr_t getName_if_Group(hid_t loc_id, const char *name, void *opdata)
           
          *groupName = (char *) malloc( (strlen(name)+1) * sizeof(char));
          if( *groupName == NULL){
-            printf("PDL::HDF5; Out of Memory in getName_if_Group\n");
+            printf("PDL::IO::HDF5; Out of Memory in getName_if_Group\n");
             exit(1);
          }
 
@@ -2421,13 +2421,13 @@ use PDL::Lite;
 use PDL::Char;
 
 
-use PDL::HDF5::Group;
+use PDL::IO::HDF5::Group;
 
 # Require needed here becuase dataset uses some of the XS 
-#  calls that are defined in PDL::HDF5 (like PDL::HDF5::H5T_NATIVE_CHAR() )
+#  calls that are defined in PDL::IO::HDF5 (like PDL::IO::HDF5::H5T_NATIVE_CHAR() )
 #  Doing a 'use' would make use of the calls before they are defined.
 #
-require PDL::HDF5::Dataset;
+require PDL::IO::HDF5::Dataset;
 
 
 use Carp;
@@ -2492,7 +2492,7 @@ PPCODE:
 		/* Allocate Space  for array of strings */
 		datasetNames = (char **) malloc( dsetCount * sizeof(char *));
 		if( datasetNames == NULL){
-			printf("PDL::HDF5; out of Memory in H5GgetDatasetNames\n");
+			printf("PDL::IO::HDF5; out of Memory in H5GgetDatasetNames\n");
 			exit(1);
 		}
  
@@ -2545,7 +2545,7 @@ PPCODE:
 		/* Allocate Space  for array of strings */
 		groupNames = (char **) malloc( groupCount * sizeof(char *));
 		if( groupNames == NULL){
-			printf("PDL::HDF5; out of Memory in H5GgetGroupNames\n");
+			printf("PDL::IO::HDF5; out of Memory in H5GgetGroupNames\n");
 			exit(1);
 		}
  

@@ -1,10 +1,10 @@
-PDL::HDF5, version 0.1
+PDL::IO::HDF5, version 0.1
 
 From The Man Pages:
 -------------------
 
 NAME
-     PDL::HDF5 - PDL Interface to the HDF5 Data Format.
+     PDL::IO::HDF5 - PDL Interface to the HDF5 Data Format.
 
 DESCRIPTION
      This package provides an object-oriented interface for the

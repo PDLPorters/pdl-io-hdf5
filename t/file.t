@@ -1,4 +1,4 @@
-use PDL::HDF5;
+use PDL::IO::HDF5;
 
 
 print "1..3\n";  
@@ -9,13 +9,13 @@ my $testNo = 1;
 my $filename = "newFile.hd5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
-ok($testNo++,new PDL::HDF5("newFile.hd5"));
+ok($testNo++,new PDL::IO::HDF5("newFile.hd5"));
 
 #Existing File for Writing Check
-ok($testNo++,new PDL::HDF5(">newFile.hd5"));
+ok($testNo++,new PDL::IO::HDF5(">newFile.hd5"));
 
 #Existing File for Reading Check
-ok($testNo++,new PDL::HDF5("newFile.hd5"));
+ok($testNo++,new PDL::IO::HDF5("newFile.hd5"));
 
 
 #  Testing utility functions:

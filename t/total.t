@@ -1,13 +1,13 @@
 use PDL;
 use PDL::Char;
-use PDL::HDF5;
+use PDL::IO::HDF5;
 use PDL::Types;
 
-# Script to test the PDL::HDF5 objects together in the
+# Script to test the PDL::IO::HDF5 objects together in the
 #   way they would normally be used
 #
 #  i.e. the way they would normally be used as described
-#  in the PDL::HDF5 synopsis
+#  in the PDL::IO::HDF5 synopsis
 
 print "1..29\n";  
 
@@ -19,7 +19,7 @@ my $filename = "newFile.hd5";
 unlink $filename if( -e $filename);
 
 my $hdfobj;
-ok($testNo++,$hdfobj = new PDL::HDF5("newFile.hd5"));
+ok($testNo++,$hdfobj = new PDL::IO::HDF5("newFile.hd5"));
 
 
 # Set attribute for file (root group)

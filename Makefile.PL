@@ -59,16 +59,31 @@ die "Cannot find hdf5 header file, hdf5.h.
 Please add the correct library path to Makefile.PL or install HDF" 
   unless defined ($hdf5_include_path);
 
+# Flags to include jpeg and/or zlib during compilation
+$jpegLib = 0;
+$zLib = 0;
+if( -e "$hdf5_include_path/H5config.h"){
+	open( H5CONFIG, "$hdf5_include_path/H5config.h") or 
+           die("Can't Open Include File '$hdf5_include_path/H5config.h'\n");
+	while(defined( $_ = <H5CONFIG>)){
+		$jpegLib = 1 if( /^\s*\#define\s+HAVE_LIBJPEG\s+1/ );
+		$zLib = 1 if( /^\s*\#define\s+HAVE_LIBZ\s+1/ );
+	}
+}
+
 
 # The following code was originally in the PDL::netCDF Makefile.PL
 #  (Not sure if it is really needed here)
 # Check if compiled under gcc/Linux.  In which case, define bool for the compiler
 $define_bool = '';
-if ($Config{'osname'} =~ linux) {
+if ($Config{'osname'} =~ /linux/) {
   $define_bool = '-Dbool=int';
   print "Defining bool=int (linux seems to need this)\n";
 }
             
+$LIBS = "-L$hdf5_lib_path -lhdf5 ";
+$LIBS .= " -lz" if($zLib);
+$LIBS .= " -ljpeg" if($jpegLib);
 
 $package = ["hdf5.pd",HDF5,PDL::HDF5];
 WriteMakefile(
@@ -79,7 +94,7 @@ WriteMakefile(
 	      'OBJECT'       => 'HDF5.o ',
 	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm'},
 	      'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path", 
-	      'LIBS'         => ["-L$hdf5_lib_path -lhdf5 "],  
+	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
 				   'HDF5.pm HDF5.xs HDF5.o HDF5.c'},
 	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz' },	

@@ -21,8 +21,168 @@ pp_bless ("PDL::HDF5");
 
 $VERSION = '0.01';
 
-
+                     
 pp_addpm(<<'EOPM');
+
+=head1 NAME
+
+PDL::HDF5 - PDL Interface to the HDF5 Data Format.
+
+
+=head1 DESCRIPTION
+
+This package provides an object-oriented interface for L<PDL>s to
+the HDF5 data-format. Information on the HDF5 Format can be found
+at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
+
+Limitations: Currently this interface only provides a subset of the total HDF5 
+capability. 
+
+=head1 SYNOPSIS
+
+        use PDL;
+	use PDL::HDF5;
+
+	my $outFile = new PDL::HDF5($filename);
+        
+        !!!!!! Need more examples here !!!!!!!!
+        
+
+=head1 MEMBER DATA
+
+
+=over 1
+
+=item _fileID
+
+ID number given to the file by the HDF5 library
+
+=item filename
+
+Name of the file.
+
+=item accessMode
+
+Access Mode?? ( read /write etc????)
+
+=back
+
+=head1 METHODS
+
+=head2 new
+
+=for ref
+
+PDL::HDF5 constructor - creates PDL::HDF5 object for reading or 
+writing data.
+
+B<Usage:>
+
+=for usage
+
+   $a = new PDL::HDF5( $filename );
+   
+Arguments:  
+1) The name of the file.
+
+If this file exists and you want to write to it, 
+prepend the name with the '>' character:  ">name.nc"
+
+Returns undef on failure.
+
+B<Example:>
+     
+=for example
+
+	$hdf5obj = new PDL::HDF5( "file.hdf" );
+        
+=cut
+
+
+sub new {
+  my $type = shift;
+  my $file = shift;
+
+  my $self = {};
+  my $rc;
+  my $write;
+
+  if (substr($file, 0, 1) eq '>') { # open for writing
+    $file = substr ($file, 1);      # chop off >
+    $write = 1;
+  }
+  
+  my $fileID; # HDF file id
+    
+  if (-e $file) {    # Existing File
+
+    if ($write) {
+
+      $fileID = H5Fopen($file, H5F_ACC_RDWR(), H5P_DEFAULT());        
+      if( $fileID < 0){  
+	carp("Can't Open Existing HDF file '$file' for writing\n");
+        return undef;
+      }
+ 
+      $self->{accessMode} = 'w';
+
+    } else { # Open read-only
+                      
+      $fileID = H5Fopen($file, H5F_ACC_RDONLY(), H5P_DEFAULT());        
+      
+      if( $fileID < 0){  
+	carp("Can't Open Existing HDF file '$file' for reading\n");
+        return undef;
+      }
+      
+      $self->{accessMode} = 'r';
+
+
+    }
+  }
+  else{  # File doesn't exist, create it:
+   
+      $fileID = H5Fcreate($file, H5F_ACC_TRUNC(), H5P_DEFAULT(), H5P_DEFAULT());        
+      if( $fileID < 0){  
+	carp("Can't Open New HDF file '$file' for writing\n");
+        return undef;
+      }
+      
+            
+      $self->{accessMode} = 'w';
+  }
+  
+  # Record file name, ID
+  $self->{filename} = $file;
+  $self->{fileID} = $fileID;
+
+  bless $self, $type;
+}
+
+=head2 DESTROY
+
+=for ref
+
+PDL::HDF5 Desctructor - Closes the HDF5 file
+
+B<Usage:>
+
+=for usage
+
+   No Usage. Automatically called
+   
+    
+=cut
+
+
+sub DESTROY {
+  my $self = shift;
+
+  if( H5Fclose($self->{fileID}) < 0){
+	warn("Error closing HDF5 file ".$self->{filename}."\n");
+  }
+
+}
 
 
 sub openHDF{

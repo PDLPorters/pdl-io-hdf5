@@ -7,7 +7,7 @@ use PDL::Types;
 
 use Data::Dumper;
 
-print "1..6\n";  
+print "1..7\n";  
 
 my $testNo = 1;
 
@@ -132,6 +132,23 @@ $baseline =
 $result = Dumper($hdfobj->{groupIndex});
 ok($testNo++,$baseline eq $result );
 
+
+
+my @groups = $hdfobj->getGroupsByAttr( 'attr1'  => 'dudeman23',
+					'attr2' => 'What??');
+$baseline = 
+q!$VAR1 = [
+          '/mygroup/subgroup',
+          '/mygroup',
+          '/dude2',
+          '/'
+        ];
+!;
+# print Dumper(\@groups);
+$result = Dumper(\@groups);
+ok($testNo++,$baseline eq $result );
+
+					
 print "completed\n";
 
 

@@ -730,6 +730,55 @@ sub clearGroupIndex{
 	
 }
 
+=head2 getGroupsByAttr
+
+=for ref
+
+Get the group names which attributes match a given set of values. This method
+enables database-like queries to be made. I.e. you can get answers to 
+questions like 'Which groups have attr1 = value1, and attr3 = value2?'.
+
+B<Usage:>
+
+=for usage
+
+ @groupNames = $hdf5Obj->getGroupsByAttr( 'attr1' => 'value1', 
+ 					  'attr2' => 'value2' );
+ 
+
+=cut
+
+sub getGroupsByAttr{
+
+	my $self = shift;
+	
+	my %attrHash = @_;
+	
+	my @keys = sort keys %attrHash;
+	
+	# Use multi-dimensional array emulation for the hash
+	#  key here because it should be quicker.	
+	my $compositeKey = join($;, @keys);
+	
+	
+	# Generate groupIndex if not there yet
+	defined( $self->{groupIndex}{$compositeKey} ) || $self->_buildGroupIndex($compositeKey);
+
+	$groupIndex = $self->{groupIndex}{$compositeKey};
+
+	my @values = @attrHash{@keys};
+	
+	my $compositeValues = join($;, @values);
+		
+	if( defined($groupIndex->{$compositeValues} )){
+		return @{$groupIndex->{$compositeValues}};
+	}
+	else{
+		return ();
+	}
+	
+}
+		
 
 =head2 allAttrValues
 

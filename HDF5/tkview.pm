@@ -189,8 +189,14 @@ sub AddChildren
 
 		my ($dataset, @dims);
 		foreach $dataset(@datasets){  # add each attribute to the display
-			@dims = $data->dataset($dataset)->dims;  # get the dims of the dataset
-			$text = "$dataset: Dims ".join(", ",@dims);
+			my $datasetData = $data->dataset($dataset);
+			@dims = $datasetData->dims;  # get the dims of the dataset
+			if( @dims){  # > 0-dimensional dataset
+				$text = "$dataset: Dims ".join(", ",@dims);
+			}
+			else{ # zero-dimensional dataset
+				$text = "$dataset: ".$datasetData->get;
+			}
 			$hl->add("$path$;"."_Dset$dataset", -image => $self->{cubeImage}, -text => $text, -data => $data);
 
 		}

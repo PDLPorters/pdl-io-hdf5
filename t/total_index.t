@@ -7,7 +7,7 @@ use PDL::Types;
 
 use Data::Dumper;
 
-print "1..2\n";  
+print "1..4\n";  
 
 my $testNo = 1;
 
@@ -45,6 +45,47 @@ q!$VAR1 = {
 !;
 
 # print $result;
+ok($testNo++,$baseline eq $result );
+
+my @values = $hdfobj->allAttrValues('attr1');
+
+$baseline = 
+q!$VAR1 = [
+          'dudeman23',
+          'dudeman23',
+          'dudeman23',
+          'dudeman23'
+        ];
+!;
+
+# print Dumper(\@values);
+$result = Dumper(\@values);
+ok($testNo++,$baseline eq $result );
+
+@values = $hdfobj->allAttrValues('attr1','attr2');
+$baseline = 
+q!$VAR1 = [
+          [
+            'dudeman23',
+            'What??'
+          ],
+          [
+            'dudeman23',
+            'What??'
+          ],
+          [
+            'dudeman23',
+            'What??'
+          ],
+          [
+            'dudeman23',
+            'What??'
+          ]
+        ];
+!;
+
+# print Dumper(\@values);
+$result = Dumper(\@values);
 ok($testNo++,$baseline eq $result );
 
 

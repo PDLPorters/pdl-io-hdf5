@@ -7,7 +7,7 @@ use PDL::HDF5::Dataset;
 #  i.e. not the way they would normally be used as described
 #  in the PDL::HDF5 synopsis
 
-print "1..10\n";  
+print "1..11\n";  
 
 my $testNo = 1;
 
@@ -75,8 +75,13 @@ my $pdl = sequence(5,4);
 
 
 ok($testNo++, $dataset->set($pdl) );
-# print "pdl = \n".$pdl."\n";
+# print "pdl written = \n".$pdl."\n";
 
+
+my $pdl2 = $dataset->get;
+# print "pdl read = \n".$pdl2."\n";
+
+ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 
 unlink("newfile.hd5");
 

@@ -258,6 +258,163 @@ sub set{
 }
 
 
+=head2 get
+
+=for ref
+
+Rdad data from a HDF5 dataset to a PDL
+
+B<Usage:>
+
+=for usage
+
+ $pdl = $dataset->get;     # Read the Array from the HDF5 dataset, create a PDL from it
+		       	   #  and put in $pdl
+
+The mapping of HDF5 datatypes in the file to PDL datatypes in memory will be according
+to the following table.
+
+ HDF5 File Type				PDL Type
+ ------------------------               -----------------
+ PDL::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B
+ PDL::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
+ PDL::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
+ PDL::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
+ PDL::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
+ PDL::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
+ PDL::HDF5::H5T_IEEE_F32BE()	=>	$PDL::Types::PDL_F,
+ PDL::HDF5::H5T_IEEE_F32LE()	=>	$PDL::Types::PDL_F,
+ PDL::HDF5::H5T_IEEE_F64BE()	=>	$PDL::Types::PDL_D,
+ PDL::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
+
+For HDF5 File types not in this table, this method will attempt to
+map it to the default PDL type PDL_D.
+
+
+=cut
+
+
+#############################################################################
+# Mapping of HDF5 file types to PDL types
+#   For 64 Bit machines, we might need to modify this with some smarts to determine
+#   what is appropriate
+%HDF5toPDLfileMapping = (
+	 PDL::HDF5::H5T_STD_I8BE()	=> 	$PDL::Types::PDL_B,
+	 PDL::HDF5::H5T_STD_I8LE()	=> 	$PDL::Types::PDL_B,
+	 PDL::HDF5::H5T_STD_I16BE()	=> 	$PDL::Types::PDL_S,
+	 PDL::HDF5::H5T_STD_I16LE()	=> 	$PDL::Types::PDL_S,
+	 PDL::HDF5::H5T_STD_I32BE()	=> 	$PDL::Types::PDL_L,
+	 PDL::HDF5::H5T_STD_I32LE()	=> 	$PDL::Types::PDL_L,
+	 PDL::HDF5::H5T_IEEE_F32BE()	=>	$PDL::Types::PDL_F,
+	 PDL::HDF5::H5T_IEEE_F32LE()	=>	$PDL::Types::PDL_F,
+	 PDL::HDF5::H5T_IEEE_F64BE()	=>	$PDL::Types::PDL_D,
+	 PDL::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
+);
+
+
+
+sub get{
+
+	$self = shift;
+
+	my $pdl;
+
+
+	my $groupID = $self->{groupID};
+	my $datasetID = $self->{datasetID};
+	my $name = $self->{name};
+
+	# Get the HDF5 file datatype;
+        my $HDF5type = PDL::HDF5::H5Dget_type($datasetID );
+	unless( $HDF5type >= 0 ){
+		carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 Dataset type.\n";
+		return undef;
+	}
+
+	# Map the HDF5 file datatype to a PDL datatype
+	my $PDLtype = $PDL::Types::PDL_D; # Default type is double
+	if( defined($HDF5toPDLfileMapping{$HDF5type}) ){
+		$PDLtype = $HDF5toPDLfileMapping{$HDF5type};
+	}
+
+	# Get the HDF5 internal datatype that corresponds to the PDL type
+	unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){
+		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+		return undef;
+	}
+	my $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
+
+
+	my $dataspaceID = PDL::HDF5::H5Dget_space($datasetID);
+	if( $dataspaceID < 0 ){
+		carp("Can't Open Dataspace in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		return undef;
+	}
+
+
+	# Get the number of dims:
+	my $Ndims = PDL::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+ 	if( $Ndims < 0 ){
+		carp("Can't Get Number of Dims in  Dataspace in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		return undef;
+	}
+
+
+	# Initialize Dims structure:
+	my @dims = ( 0..($Ndims-1)); 
+        my $dims = PDL::HDF5::packList(@dims);
+	my $dims2 = PDL::HDF5::packList(@dims);
+
+        my $rc = PDL::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
+
+	if( $rc != $Ndims){
+		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	}
+
+	@dims = PDL::HDF5::unpackList($dims); # get the dim sizes from the binary structure
+
+	$pdl = PDL->null;
+	$pdl->set_datatype($PDLtype);
+	$pdl->setdims([reverse @dims]);  # HDF5 stores columns/rows in reverse order than pdl
+
+	my $nelems = 1;
+	foreach (@dims){ $nelems *= $_; }; # calculate the number of elements
+
+	my $datasize = $nelems * PDL::howbig($pdl->get_datatype);
+	my $data = pack("x$datasize"); # create empty space for the data
+
+	# Read the data:
+        $rc = PDL::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::HDF5::H5S_ALL(), PDL::HDF5::H5S_ALL(), 
+		   PDL::HDF5::H5P_DEFAULT(),
+                    $data);
+
+	if( $rc < 0 ){
+		carp("Error reading data from file in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	}
+
+	# Update the PDL data with the data read from the file
+	${$pdl->get_dataref()} = $data;
+	$pdl->upd_data();
+
+
+	# /* Terminate access to the data space. */
+	carp("Can't close Dataspace in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Sclose($dataspaceID) < 0);
+
+	# /* Terminate access to the data type. */
+	carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::HDF5::H5Tclose($HDF5type) < 0);
+	return $pdl;
+
+}
+
+
 
 
 =head2 attrSet

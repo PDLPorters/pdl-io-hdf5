@@ -35,8 +35,28 @@ This package provides an object-oriented interface for L<PDL>s to
 the HDF5 data-format. Information on the HDF5 Format can be found
 at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
 
-Limitations: Currently this interface only provides a subset of the total HDF5 
+=head2 LIMITATIONS
+
+Limitations: Currently this interface only provides a subset of the total HDF5 library's
 capability. 
+
+=over 1
+
+=item *
+
+Only HDF5 Simple datatypes are supported. No HDF5 Compound datatypes are supported since PDL doesn't
+support them.
+
+=item *
+
+Only HDF5 Simple dataspaces are supported.
+
+item *
+
+Only 0-dimensional (i.e. scalar) attributes are supported. (Support for PDLs as attributes could possibly be
+added later.)
+
+=back
 
 =head1 SYNOPSIS
 
@@ -234,6 +254,47 @@ pp_addpm(<<'EOPM');
 }
 EOPM
 
+pp_addpm(<<'EOPM');
+
+# 
+# Utility function (Not a Method!!!)
+#  to unpack a perl list from a binary structure
+#  that is a C array of long longs. This code is build
+#  during the make process to do the Right Thing for big and little
+#  endian machines
+sub unpackList{
+	
+
+	if(ref($_[0])){
+		croak(__PACKAGE__."::unpackList is not a method!\n");
+	}
+
+	my ($binaryStruct) = (@_); # input binary structure
+	my $listLength = length($binaryStruct) / 8;  # list returned will be the
+						    # number of bytes in the input struct/8, since
+						    # the output numbers are 64bit.
+	
+EOPM
+
+# UnPacking of long int array structure differs depending on 
+# if the current machine is little or big endian.   This logic
+#  probably won't work for 'weird' byte order machine, but for most
+#  others (intel, vax, sun, etc) it should be OK.
+#
+if( $Config{'byteorder'} =~ /^1/){ # little endian
+   pp_addpm("\t".'my $unpackString = "Lxxxx" x $listLength; # 4 xxxx used to toss upper 32 bits');
+}
+else{ # Big Endian Machine
+   pp_addpm("\t".'my $unpackString = "xxxxL" x $listLength; # 4 xxxx used to toss upper 32 bits');
+}
+
+pp_addpm(<<'EOPM');
+	my @list = unpack( $unpackString, $binaryStruct );
+	
+	return @list;
+}
+EOPM
+
 
 
 
@@ -320,13 +381,25 @@ create_low_level (<<'EODEF');
 hid_t H5Fcreate (const char *name, unsigned flags, hid_t create_id, hid_t access_id); 
 hid_t H5Fopen (const char *name, unsigned flags, hid_t access_id); 
 herr_t H5Fclose (hid_t file_id); 
+#
+# Dataspace functions
 hid_t H5Screate_simple (int rank, const hsize_t * dims,  const hsize_t * maxdims);
 herr_t H5Sclose(hid_t space_id); 
+int H5Sget_simple_extent_ndims(hid_t space_id);
+int H5Sget_simple_extent_dims(hid_t space_id, hsize_t *dims, hsize_t *maxdims);
+#
+#
+# Dataset Functions
 hid_t H5Dcreate (hid_t loc_id, const char *name, hid_t type_id,  hid_t space_id, hid_t create_plist_id); 
 hid_t H5Dopen (hid_t loc_id, const char *name);
 herr_t H5Dwrite (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, const char * buf);
-herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, void * buf);
+# H5Dread buf type changed from void * to I8 * so that is can be catergorized separately in the
+#  typemap as a T_PVI traslation
+herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, I8 * buf);
 hid_t H5Dclose (hid_t dataset_id);
+hid_t H5Dget_type(hid_t dataset_id);
+hid_t H5Dget_space(hid_t dataset_id);
+
 hid_t H5Gcreate(hid_t loc_id, const char *name, size_t size_hint);
 hid_t H5Gopen(hid_t loc_id, const char *name);
 herr_t H5Gclose(hid_t group_id);

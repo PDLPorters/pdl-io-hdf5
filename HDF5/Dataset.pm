@@ -457,7 +457,14 @@ sub get{
 	foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
 
 	my $datasize = $nelems * PDL::howbig($pdl->get_datatype);
-	my $data = pack("x$datasize"); # create empty space for the data
+	
+	# Create empty space for the data
+	#   Incrementally, to get around problem on win32
+	my $howBig = PDL::howbig($pdl->get_datatype);
+	my $data = ' ' x $howBig;
+	foreach my $dim(@pdldims){
+		$data = $data x $dim;
+	}
 
 	# Read the data:
         $rc = PDL::IO::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), 

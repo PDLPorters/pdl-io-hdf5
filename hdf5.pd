@@ -19,7 +19,7 @@ EOH
 
 pp_bless ("PDL::IO::HDF5");
 
-$VERSION = '0.3';
+$VERSION = '0.5';
 
                      
 pp_addpm(<<'EOPM');

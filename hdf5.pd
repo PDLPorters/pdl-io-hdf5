@@ -33,7 +33,7 @@ PDL::IO::HDF5 - PDL Interface to the HDF5 Data Format.
 
 This package provides an object-oriented interface for L<PDL>s to
 the HDF5 data-format. Information on the HDF5 Format can be found
-at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
+at the NCSA's web site at http://www.hdfgroup.org .
 
 =head2 LIMITATIONS
 

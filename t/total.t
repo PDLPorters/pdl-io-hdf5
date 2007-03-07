@@ -9,7 +9,7 @@ use PDL::Types;
 #  i.e. the way they would normally be used as described
 #  in the PDL::IO::HDF5 synopsis
 
-print "1..29\n";  
+print "1..30\n";  
 
 my $testNo = 1;
 
@@ -104,6 +104,13 @@ ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 
 # Check for the PDL returned being a float
 ok($testNo++, ($pdl->get_datatype - $PDL_F) < .001 );
+
+# Get a hyperslab
+$pdl = $dataset->get(pdl([0,0]), pdl([5,1]));  # Get the first vector of the PDL
+
+# Check to see if the dims are as expected.
+my @pdlDims = $pdl->dims;
+ok( $testNo++, ($pdlDims[0] == 5) && ($pdlDims[1] == 1));
 
 ################ Set Attributes at the Dataset Leve ###############			
 					

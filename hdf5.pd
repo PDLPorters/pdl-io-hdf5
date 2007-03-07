@@ -92,6 +92,7 @@ added later.)
   my @datasets =  $group->datasets;                   # get a list of all datasets in a group
   @dims = $dataset->dims;                             # get a list of dimensions for the dataset
   $pdl = $dataset->get();                             # Get the array data in the dataset
+  $pdl = $dataset->get($start,$length,$stride);       # Get a slice or hyperslab of the array data in the dataset
   $dataset->set($pdl);                                # Set the array data in the dataset
   my $attrValue = $dataset->attrGet('AttrName');      # Get attribute value for a dataset
   $dataset->attSet('AttrName' => 'AttrValue');        # Set attribute value(s) for a dataset
@@ -1166,6 +1167,7 @@ hid_t H5Screate_simple (int rank, const hsize_t * dims,  const hsize_t * maxdims
 herr_t H5Sclose(hid_t space_id); 
 int H5Sget_simple_extent_ndims(hid_t space_id);
 int H5Sget_simple_extent_dims(hid_t space_id, hsize_t *dims, hsize_t *maxdims);
+herr_t H5Sselect_hyperslab(hid_t space_id, int op, const hsize_t *start, const hsize_t *stride, const hsize_t *count, const hsize_t *block);
 #
 #
 # Dataset Functions

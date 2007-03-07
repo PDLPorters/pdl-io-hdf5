@@ -299,6 +299,30 @@ B<Usage:>
  $pdl = $dataset->get;     # Read the Array from the HDF5 dataset, create a PDL from it
 		       	   #  and put in $pdl
 
+                           # Assuming $dataset is three dimensional
+                           # with dimensions (20,100,90)
+
+The I<get> method can also be used to obtain particular slices or hyperslabs
+of the dataset array. For example, if $dataset is three dimensional with dimensions
+(20,100,90) then we could do:
+
+ $start=pdl([0,0,0]);      # We begin the slice at the very beggining
+ $lenght=pdl([20,1,1]);    # We take the first vector of the array,
+ $stride=pdl([2,1,1]);     # taking only every two values of the vector 
+
+ $pdl = $dataset->get($start,$length,[$stride]); # Read a slice or
+                           # hyperslab from the HDF5 dataset.
+                           # $start, $length and optionally $stride
+                           # should be PDL vectors with length the
+                           # number of dimensions of the dataset.
+                           # $start gives the starting coordinates
+                           # in the array.
+                           # $length gives the size of the matrix
+                           # to be retrieved
+                           # $stride gives the steps taken from one
+                           # coordinate to the next of the slice
+
+
 The mapping of HDF5 datatypes in the file to PDL datatypes in memory will be according
 to the following table.
 
@@ -345,6 +369,9 @@ $H5T_STRING = PDL::IO::HDF5::H5T_STRING();  #HDF5 string type
 sub get{
 
 	my $self = shift;
+	my $start = shift;
+	my $length = shift;
+	my $stride = shift;
 
 	my $pdl;
 
@@ -423,39 +450,99 @@ sub get{
 	}
 
 
-	# Initialize Dims structure:
 	my @dims = ( 0..($Ndims-1)); 
-        my $dims = PDL::IO::HDF5::packList(@dims);
-	my $dims2 = PDL::IO::HDF5::packList(@dims);
-
-        my $rc = PDL::IO::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
-
-	if( $rc != $Ndims){
+	my ($mem_space,$file_space);
+	if (not defined $start) {
+	    # Initialize Dims structure:
+	    my $dims = PDL::IO::HDF5::packList(@dims);
+	    my $dims2 = PDL::IO::HDF5::packList(@dims);
+	    
+	    my $rc = PDL::IO::HDF5::H5Sget_simple_extent_dims($dataspaceID, $dims, $dims2 );
+	    
+	    if( $rc != $Ndims){
 		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
+	    }
+	    
+	    @dims = PDL::IO::HDF5::unpackList($dims); # get the dim sizes from the binary structure
+	    
+	} else {
+	    if ( ($start->getndims != 1) || ($start->getdim(0) != $Ndims) ){
+		carp("Wrong dimensions in start PDL in ".__PACKAGE__."\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	    }
+	    my $start2 = PDL::IO::HDF5::packList(reverse($start->list));
+	    if (not defined $length) {
+		carp("No length supplied in ".__PACKAGE__."\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	    }
+	    if ( ($length->getndims != 1) || ($length->getdim(0) != $Ndims) ) {
+		carp("Wrong dimensions in length PDL in ".__PACKAGE__."\n") ;
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	    }
+	    my $length2 = PDL::IO::HDF5::packList(reverse($length->list));
+	    
+	    if (defined $stride) {
+		if ( ($stride->getndims != 1) || 
+		     ($stride->getdim(0) != $Ndims) ) {
+		    carp("Wrong dimensions in stride in ".__PACKAGE__."\n");
+		    carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		    carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		    return undef;
+		}
+		@dims=reverse(($length/$stride)->list);
+	    } else {
+		@dims=reverse($length->list);
+		$stride=PDL::Core::ones($Ndims);
+	    }
+	    my $mem_dims = PDL::IO::HDF5::packList(@dims);
+	    my $stride2 = PDL::IO::HDF5::packList(reverse($stride->list));
+	    my $block=PDL::Core::ones($Ndims);
+	    my $block2 = PDL::IO::HDF5::packList(reverse($block->list));
+
+	    # Slice the data
+	    $file_space = PDL::IO::HDF5::H5Dget_space($datasetID);
+	    $rc=PDL::IO::HDF5::H5Sselect_hyperslab($file_space, 0, 
+			 $start2, $stride2, $length2, $block2);
+
+	
+	    if( $rc < 0 ){
+		carp("Error slicing data from file in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	    }
+	    
+	    $mem_space = PDL::IO::HDF5::H5Screate_simple($Ndims, $mem_dims, 
+							    $mem_dims);
+
 	}
-
-	@dims = PDL::IO::HDF5::unpackList($dims); # get the dim sizes from the binary structure
-
+	
 	$pdl = $ReturnType->null;
 	$pdl->set_datatype($PDLtype);
 	my @pdldims;  # dims of the PDL
 	if( defined( $stringSize )){  # String types
-		
-		@pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
-							      #  1st PDL dim is the string length (for PDL::Char)
+	    
+	    @pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
+	    #  1st PDL dim is the string length (for PDL::Char)
 	}
 	else{ # Normal Numeric types
-		@pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl,
+	    @pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl,
 	}
-
+	
 	$pdl->setdims(\@pdldims);
-
+	
 	my $nelems = 1;
 	foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
-
+	
 	my $datasize = $nelems * PDL::howbig($pdl->get_datatype);
 	
 	# Create empty space for the data
@@ -463,21 +550,29 @@ sub get{
 	my $howBig = PDL::howbig($pdl->get_datatype);
 	my $data = ' ' x $howBig;
 	foreach my $dim(@pdldims){
-		$data = $data x $dim;
+	    $data = $data x $dim;
+	}
+	# Read the data:
+	if (not defined $start) {
+	    $rc = PDL::IO::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), 
+					 PDL::IO::HDF5::H5P_DEFAULT(),
+					 $data);
+	} else {
+
+	    $rc = PDL::IO::HDF5::H5Dread($datasetID, $internalhdf5_type,
+					 $mem_space, $file_space, 
+					 PDL::IO::HDF5::H5P_DEFAULT(),
+					 $data);
 	}
 
-	# Read the data:
-        $rc = PDL::IO::HDF5::H5Dread($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), 
-		   PDL::IO::HDF5::H5P_DEFAULT(),
-                    $data);
-
+	
 	if( $rc < 0 ){
-		carp("Error reading data from file in ".__PACKAGE__.":get\n");
-		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
-		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+	    carp("Error reading data from file in ".__PACKAGE__.":get\n");
+	    carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+	    carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	}
-
+	
 	# Update the PDL data with the data read from the file
 	${$pdl->get_dataref()} = $data;
 	$pdl->upd_data();

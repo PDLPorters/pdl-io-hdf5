@@ -106,7 +106,7 @@ ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
 ok($testNo++, ($pdl->get_datatype - $PDL_F) < .001 );
 
 # Get a hyperslab
-$pdl = $dataset->get(pdl([0,0]), pdl([5,1]));  # Get the first vector of the PDL
+$pdl = $dataset->get(pdl([0,0]), pdl([4,0]));  # Get the first vector of the PDL
 
 # Check to see if the dims are as expected.
 my @pdlDims = $pdl->dims;

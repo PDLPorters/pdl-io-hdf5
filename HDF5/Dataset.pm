@@ -307,18 +307,18 @@ of the dataset array. For example, if $dataset is three dimensional with dimensi
 (20,100,90) then we could do:
 
  $start=pdl([0,0,0]);      # We begin the slice at the very beggining
- $lenght=pdl([20,1,1]);    # We take the first vector of the array,
+ $end=pdl([19,0,0]);       # We take the first vector of the array,
  $stride=pdl([2,1,1]);     # taking only every two values of the vector 
 
- $pdl = $dataset->get($start,$length,[$stride]); # Read a slice or
+ $pdl = $dataset->get($start,$end,[$stride]); # Read a slice or
                            # hyperslab from the HDF5 dataset.
-                           # $start, $length and optionally $stride
+                           # $start, $end and optionally $stride
                            # should be PDL vectors with length the
                            # number of dimensions of the dataset.
                            # $start gives the starting coordinates
                            # in the array.
-                           # $length gives the size of the matrix
-                           # to be retrieved
+                           # $end gives the ending coordinate
+                           # in the array
                            # $stride gives the steps taken from one
                            # coordinate to the next of the slice
 
@@ -370,7 +370,7 @@ sub get{
 
 	my $self = shift;
 	my $start = shift;
-	my $length = shift;
+	my $end = shift;
 	my $stride = shift;
 
 	my $pdl;
@@ -476,19 +476,20 @@ sub get{
 		return undef;
 	    }
 	    my $start2 = PDL::IO::HDF5::packList(reverse($start->list));
-	    if (not defined $length) {
-		carp("No length supplied in ".__PACKAGE__."\n");
+	    if (not defined $end) {
+		carp("No end supplied in ".__PACKAGE__."\n");
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	    }
-	    if ( ($length->getndims != 1) || ($length->getdim(0) != $Ndims) ) {
-		carp("Wrong dimensions in length PDL in ".__PACKAGE__."\n") ;
+	    if ( ($end->getndims != 1) || ($end->getdim(0) != $Ndims) ) {
+		carp("Wrong dimensions in end PDL in ".__PACKAGE__."\n") ;
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		return undef;
 	    }
-	    my $length2 = PDL::IO::HDF5::packList(reverse($length->list));
+	    
+	    my $length2;
 	    
 	    if (defined $stride) {
 		if ( ($stride->getndims != 1) || 
@@ -498,9 +499,11 @@ sub get{
 		    carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 		    return undef;
 		}
-		@dims=reverse(($length/$stride)->list);
+		@dims=reverse((($end-$start+1)/$stride)->list);
+		$length2 = PDL::IO::HDF5::packList(@dims);
 	    } else {
-		@dims=reverse($length->list);
+		@dims=reverse(($end-$start+1)->list);
+		$length2 = PDL::IO::HDF5::packList(@dims);
 		$stride=PDL::Core::ones($Ndims);
 	    }
 	    my $mem_dims = PDL::IO::HDF5::packList(@dims);

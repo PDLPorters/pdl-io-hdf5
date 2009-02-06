@@ -176,7 +176,7 @@ B<Usage:>
 %PDLtoHDF5internalTypeMapping = (
 	$PDL::Types::PDL_B	=>	PDL::IO::HDF5::H5T_NATIVE_CHAR(),
 	$PDL::Types::PDL_S	=> 	PDL::IO::HDF5::H5T_NATIVE_SHORT(),
-	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_NATIVE_LONG(),
+	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_NATIVE_INT(),
         $PDL::Types::PDL_F	=>	PDL::IO::HDF5::H5T_NATIVE_FLOAT(),
 	$PDL::Types::PDL_D	=>	PDL::IO::HDF5::H5T_NATIVE_DOUBLE(),
 );

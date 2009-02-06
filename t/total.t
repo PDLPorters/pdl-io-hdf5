@@ -9,7 +9,7 @@ use PDL::Types;
 #  i.e. the way they would normally be used as described
 #  in the PDL::IO::HDF5 synopsis
 
-print "1..30\n";  
+print "1..33\n";  
 
 my $testNo = 1;
 
@@ -87,6 +87,7 @@ my $group = $hdfobj->group("mygroup");
 
 my $subgroup = $group->group("subgroup");
 
+### Try a non-deault data-set type (float) ####
 # Create a dataset in the subgroup
 $dataset = $subgroup->dataset('my dataset');
 
@@ -112,7 +113,28 @@ $pdl = $dataset->get(pdl([0,0]), pdl([4,0]));  # Get the first vector of the PDL
 my @pdlDims = $pdl->dims;
 ok( $testNo++, ($pdlDims[0] == 5) && ($pdlDims[1] == 1));
 
-################ Set Attributes at the Dataset Leve ###############			
+
+### Try a non-deault data-set type (int/long) ####
+# Create a dataset in the subgroup
+$dataset = $subgroup->dataset('my dataset2');
+
+$pdl = sequence(5,4)->long; # Try a non-default data type
+
+
+ok($testNo++, $dataset->set($pdl) );
+# print "pdl written = \n".$pdl."\n";
+
+
+$pdl2 = $dataset->get;
+# print "pdl read = \n".$pdl2."\n";
+
+ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+
+# Check for the PDL returned being a int/long
+ok($testNo++, ($pdl->get_datatype - $PDL_L) < .001 );
+
+
+################ Set Attributes at the Dataset Level ###############			
 					
 # Set attribute for group
 ok($testNo++, $dataset->attrSet( 'attr1' => 'DSdudeman', 'attr2' => 'DSWhat??'));
@@ -137,7 +159,7 @@ ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
 
 ok($testNo++, join(",",@attrValues) eq 'DSdudeman23,DSWhat??' );
 
-################ Set Attributes at the Group Leve ###############			
+################ Set Attributes at the Group Level ###############			
 					
 # Set attribute for group
 ok($testNo++, $group->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));

@@ -51,11 +51,6 @@ support them.
 
 Only HDF5 Simple dataspaces are supported.
 
-=item *
-
-Only 0-dimensional (i.e. scalar) attributes are supported. (Support for PDLs as attributes could possibly be
-added later.)
-
 =back
 
 =head1 SYNOPSIS
@@ -428,7 +423,8 @@ sub datasets{
 
 Set the value of an attribute(s) in the root '/' group of the file.
 
-Currently the only attribute types supported are null-terminated strings.
+Currently attribute types supported are null-terminated strings and
+any PDL type.
 
 B<Usage:>
 
@@ -436,6 +432,7 @@ B<Usage:>
 
    $HDFfile->attrSet( 'attr1' => 'attr1Value',
    		    'attr2' => 'attr2 value', 
+                    'attr3' => $pdl,
 		    .
 		    .
 		    .
@@ -447,6 +444,7 @@ Note: This is a convienence method that is equivalent to:
 
   $HDFfile->group("/")->attrSet( 'attr1' => 'attr1Value',
 				 'attr2' => 'attr2 value', 
+                                 'attr3' => $pdl,
 				 .
 				 .
 				 .
@@ -472,7 +470,8 @@ sub attrSet {
 
 Get the value of an attribute(s) in the root '/' group of the file.
 
-Currently the only attribute types supported are null-terminated strings.
+Currently the attribute types supported are null-terminated strings
+and PDLs.
 
 B<Usage:>
 
@@ -1192,7 +1191,7 @@ herr_t H5errorOff();
 hid_t H5Aopen_name(hid_t loc_id, const char *name);
 hid_t H5Acreate(hid_t loc_id, const char *name, hid_t type_id, hid_t space_id, hid_t create_plist);
 # Note: attrib write only supports char buffer right now
-herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, char * buf);
+herr_t H5Awrite (hid_t attr_id, hid_t mem_type_id, I8 * buf);
 herr_t H5Adelete(hid_t loc_id, const char * name);
 herr_t H5Aclose(hid_t attr_id);
 int H5Aget_num_attrs(hid_t loc_id);
@@ -1202,7 +1201,7 @@ htri_t H5Sis_simple(hid_t space_id);
 hid_t H5Aget_space(hid_t attr_id);
 hid_t H5Aget_type(hid_t attr_id);
 # The Attrib read only supports char buffer right now
-herr_t H5Aread(hid_t attr_id, hid_t mem_type_id, char *buf);
+herr_t H5Aread(hid_t attr_id, hid_t mem_type_id, I8 *buf);
 
 # Type Functions:
 herr_t H5Tset_size(hid_t type_id, size_t size);

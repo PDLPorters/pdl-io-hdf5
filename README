@@ -1,4 +1,4 @@
-PDL::IO::HDF5, version 0.5
+PDL::IO::HDF5, version 0.6
 
 From The Man Pages:
 -------------------
@@ -21,10 +21,6 @@ DESCRIPTION
       datatypes are supported since PDL doesn't support them.
 
     o Only HDF5 Simple dataspaces are supported.
-
-    o Only 0-dimensional (i.e. scalar) attributes are supported.
-      (Support for PDLs as attributes could possibly be added
-      later.)
 
 Also Included:
 --------------

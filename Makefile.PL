@@ -1,5 +1,34 @@
 # Makefile.PL for a package defined by PP code.
 
+# Check for a PDL installation
+BEGIN
+ {
+
+    eval{ require PDL::Core::Dev };
+    if( $@ ){
+            print "\n#### Error requiring 'PDL::Core::Dev': Perhaps you don't have PDL installed ###\n";
+            print "####  This module requires a PDL installation                           ###\n";
+            
+	    require ExtUtils::MakeMaker;
+	    import  ExtUtils::MakeMaker;
+
+            # Write out a simple makefile with PREREQ_PM, so CPAN will at least detect our
+            #   prerequesites.
+            WriteMakefile( 
+                'VERSION_FROM'  => 'hdf5.pd',
+                'NAME'     => 'PDL::IO::HDF5',
+                'DISTNAME' => "PDL-IO=HDF5",
+                'PREREQ_PM'  => { PDL => 2.1 }
+                );
+            exit();
+    }
+    
+}  
+  
+
+
+
+
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use Config;
@@ -33,9 +62,12 @@ foreach my $libdir (
 
 }
 
-die "Cannot find hdf5 library, libhdf5.so or libhdf5.a.  
-Please add the correct library path to Makefile.PL or install HDF" 
-  unless defined ($hdf5_lib_path);
+# We don't do a die here, because we would get bogus emails from CPAN testers
+unless(defined ($hdf5_lib_path) ){
+	print "####### Cannot find hdf5 library, libhdf5.so or libhdf5.a.  
+#######   Please add the correct library path to Makefile.PL or install HDF\n";
+	exit();
+} 
 
 foreach my $incdir (
 		    '/usr/local/hdf5/include',
@@ -55,9 +87,12 @@ foreach my $incdir (
   }
 }
 
-die "Cannot find hdf5 header file, hdf5.h.
-Please add the correct library path to Makefile.PL or install HDF" 
-  unless defined ($hdf5_include_path);
+# We don't do a die here, because we would get bogus emails from CPAN testers
+unless ( defined ($hdf5_include_path) ){
+	print "####### Cannot find hdf5 header file, hdf5.h.
+#######   Please add the correct library path to Makefile.PL or install HDF5\n";
+	exit();
+} 
 
 # Flags to include jpeg and/or zlib during compilation
 $jpegLib = 0;
@@ -90,6 +125,7 @@ $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$define_bool -g",  
+              'PREREQ_PM'  => { PDL => 2.1 },
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',

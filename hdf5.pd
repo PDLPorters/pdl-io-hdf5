@@ -1,8 +1,7 @@
 use Config;
 
-
-
-
+our $VERSION = 0.6;
+pp_setversion(0.6);
 
 # Necessary includes for .xs file
 pp_addhdr(<<'EOH');
@@ -19,10 +18,11 @@ EOH
 
 pp_bless ("PDL::IO::HDF5");
 
-$VERSION = '0.6';
+
 
                      
 pp_addpm(<<'EOPM');
+
 
 =head1 NAME
 

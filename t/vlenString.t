@@ -6,7 +6,7 @@ use PDL;
 use PDL::Char;
 use PDL::IO::HDF5;
 
-print "1..3\n";  
+print "1..5\n";  
 
 my $testNo = 1;
 
@@ -31,6 +31,19 @@ ok( $testNo++, join(", ", @dims) eq "93, 4");
 ok( $testNo++,   $pdl->atstr(2) eq "Now we are engaged in a great civil war,");
 
 # print "PDL::Char = $pdl\n";
+
+
+###### Now check variable-length string attribute array ###
+($pdl) = $dataset->attrGet('Attr1');
+
+@dims = $pdl->dims;
+
+#print "dims = ".join(", ", @dims)."\n";
+ok( $testNo++, join(", ", @dims) eq "14, 4");
+
+#print $pdl->atstr(2)."\n";
+ok( $testNo++,   $pdl->atstr(2) eq "Attr String 3");
+
 
 exit;
 

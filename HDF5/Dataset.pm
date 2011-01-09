@@ -1116,19 +1116,33 @@ sub attrGet {
 		    
 
 		    # Check for string type:
+		    my $varLenString = 0; # Flag = 1 if reading variable-length string array
 		    if( PDL::IO::HDF5::H5Tget_class($HDF5type ) == $H5T_STRING ){  # String type
 			
-			$stringSize = PDL::IO::HDF5::H5Tget_size($HDF5type);
-			unless( $stringSize >= 0 ){
-			    carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 String Datatype Size.\n";
-			    carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
-			    carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
-			    carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
-			    return undef;
-			}
-			
+                        # Check for variable length string"
+                        if( ! PDL::IO::HDF5::H5Tis_variable_str($HDF5type ) ){
+                                # Not a variable length string
+                                $stringSize = PDL::IO::HDF5::H5Tget_size($HDF5type);
+                                unless( $stringSize >= 0 ){
+                                    carp "Error Calling ".__PACKAGE__."::get: Can't get HDF5 String Datatype Size.\n";
+                                    carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+                                    carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+                                    carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
+                                    return undef;
+                                }
+                                $internalhdf5_type =  $HDF5type; # internal storage the same as the file storage.
+                        }
+                        else{
+                                # Variable-length String, set flag
+                                $varLenString = 1;
+                                
+                                # Create variable-length type for reading from the file
+                                $internalhdf5_type = PDL::IO::HDF5::H5Tcopy(PDL::IO::HDF5::H5T_C_S1() );
+                                PDL::IO::HDF5::H5Tset_size( $internalhdf5_type, PDL::IO::HDF5::H5T_VARIABLE() );
+        
+                        }
+                        
 			$PDLtype = $PDL::Types::PDL_B; 
-			$internalhdf5_type =  $HDF5type; # internal storage the same as the file storage.
 			$typeID=$HDF5type;
 			$ReturnType = 'PDL::Char';	 # For strings, we return a PDL::Char
 			
@@ -1176,28 +1190,43 @@ sub attrGet {
 
 		    @dims = PDL::IO::HDF5::unpackList($dims); # get the dim sizes from the binary structure
 		    
+		    # Create initial PDL null array with the proper datatype	
 		    $attrValue = $ReturnType->null;
 		    $attrValue->set_datatype($PDLtype);
+		    
 		    my @pdldims;  # dims of the PDL
-		    if( defined( $stringSize )){  # String types
+		    my $datatypeSize; # Size of one element of data stored
+		    if( defined( $stringSize )){ # Fixed-Length String types
 		
 			@pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
 			#  1st PDL dim is the string length (for PDL::Char)
+
+			$datatypeSize = PDL::howbig($attrValue->get_datatype);
 		    }
+		    elsif(  $varLenString ){ # Variable-length String
+                              # (Variable length string arrays will be converted to fixed-length strings later)
+                            @pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl
+                            
+                            # Variable length strings are stored as arrays of string pointers, so get that size
+                            #   This will by 4 bytes on 32-bit machines, and 8 bytes on 64-bit machines.
+                            $datatypeSize = PDL::IO::HDF5::bufPtrSize();
+                    }
 		    else{ # Normal Numeric types
 			@pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl,
+
+                        $datatypeSize = PDL::howbig($attrValue->get_datatype);
+
 		    }
 		    
-		    $attrValue->setdims(\@pdldims);
 		    
 		    my $nelems = 1;
 		    foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
 
-		    my $datasize = $nelems * PDL::howbig($attrValue->get_datatype);
+		    my $datasize = $nelems * $datatypeSize;
 		    
 		    # Create empty space for the data
 		    #   Incrementally, to get around problem on win32
-		    my $howBig = PDL::howbig($attrValue->get_datatype);
+		    my $howBig = $datatypeSize;
 		    my $data = ' ' x $howBig;
 		    foreach my $dim(@pdldims){
 		   	$data = $data x $dim;
@@ -1214,7 +1243,36 @@ sub attrGet {
 			return undef;
 		    }
 
-		    # Update the PDL data with the data read from the file
+                    if( $varLenString ){ 
+                        # Convert variable-length string to fixed-length string, to be compatible with the PDL::Char type
+                        my $maxsize = PDL::IO::HDF5::findMaxVarLenSize($data, $nelems);
+        
+                        # Create empty space for the fixed-length data
+                        #   Incrementally, to get around problem on win32
+                        my $howBig = $maxsize + 1; # Adding one to include the null string terminator
+                        my $fixeddata = ' ' x $howBig;
+                        foreach my $dim(@pdldims){
+                            $fixeddata = $fixeddata x $dim;
+                        }
+                        
+                        PDL::IO::HDF5::copyVarLenToFixed($data, $fixeddata, $nelems, $maxsize);
+                        
+                        # Reclaim data from HDF5 system (HDF5 allocates memory when it reads variable-length strings)
+                        $rc = PDL::IO::HDF5::H5Dvlen_reclaim ($internalhdf5_type, $dataspaceID, PDL::IO::HDF5::H5P_DEFAULT(), $data);
+                        if( $rc < 0 ){
+                            carp("Error reclaiming memeory while reading data from file in ".__PACKAGE__.":get\n");
+                            carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+                            carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+                                return undef;
+                        }
+        
+                        # Adjust for fixed-length PDL creation
+                        $data = $fixeddata;
+                        unshift @pdldims, ($maxsize+1);
+                    }
+
+		    # Setup the PDL with the proper dimensions and data
+                    $attrValue->setdims(\@pdldims);
 		    ${$attrValue->get_dataref()} = $data;
 		    $attrValue->upd_data();
 		    

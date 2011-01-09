@@ -3,6 +3,8 @@ package PDL::IO::HDF5::Group;
 
 use Carp;
 
+use strict;
+
 =head1 NAME
 
 PDL::IO::HDF5::Group - PDL::IO::HDF5 Helper Object representing HDF5 groups.

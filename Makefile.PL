@@ -124,7 +124,7 @@ $LIBS .= " -lm";
 $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
-	      'CCFLAGS'      => "$define_bool -g",  
+	      'CCFLAGS'      => "$define_bool -DH5_USE_16_API -g",  
               'PREREQ_PM'  => { PDL => 2.1 },
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 

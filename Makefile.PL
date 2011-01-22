@@ -115,7 +115,14 @@ if ($Config{'osname'} =~ /linux/) {
   $define_bool = '-Dbool=int';
   print "Defining bool=int (linux seems to need this)\n";
 }
-            
+
+#If in win32, add the required defined for the HDF5 libs to work:
+$define_win32HDF = '';
+if ($Config{'osname'} =~ /win32/i) {
+  $define_win32HDF = '-D _HDF5USEDLL_ -D HASATTRIBUTE ';
+  print "Defining _HDF5USEDLL_ for win32\n";
+}
+
 $LIBS = "-L$hdf5_lib_path -lhdf5 ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
@@ -124,7 +131,7 @@ $LIBS .= " -lm";
 $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
-	      'CCFLAGS'      => "$define_bool -DH5_USE_16_API -g",  
+	      'CCFLAGS'      => "$define_bool $define_win32HDF -DH5_USE_16_API -g",  
               'PREREQ_PM'  => { PDL => 2.1 },
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 

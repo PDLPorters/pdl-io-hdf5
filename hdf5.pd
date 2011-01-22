@@ -2585,9 +2585,11 @@ CODE:
         /* Find max string length */
         maxStrSize = 0;
         for(i=0; i<numelem; i++) {
-                /* printf("String %d = '%s'\n", i, rdata[i]); */
-                len = strlen(rdata[i]);
-                if( len > maxStrSize ) maxStrSize = len;
+		if( rdata[i] ){ /* Ignore null entries */
+                	/* printf("String %d = '%s'\n", i, rdata[i]); */
+                	len = strlen(rdata[i]);
+                	if( len > maxStrSize ) maxStrSize = len;
+		}
         } /* end for */
         RETVAL = maxStrSize;
 OUTPUT:
@@ -2619,7 +2621,12 @@ CODE:
 
         /* Copy variable length strings to fixed length strings */
         for(i=0; i<numelem; i++, tempPtr += fixlenbufferInc ) {
-             strncpy(tempPtr, rdata[i], fixlenbufferInc);
+	     if( rdata[i] ){ /* Only copy non-null strings */
+             	strncpy(tempPtr, rdata[i], fixlenbufferInc);
+	     }
+	     else{  /* Null Strings: Copy as zero length */
+             	strncpy(tempPtr, "", fixlenbufferInc);
+	     }
         }
         RETVAL = numelem;
 OUTPUT:

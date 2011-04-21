@@ -7,7 +7,7 @@ use PDL::Types;
 # Test case for HDF5 attributes that are pdls 
 #   This is a new feature as-of version 0.6
 #
-print "1..6\n";  
+print "1..9\n";  
 
 my $testNo = 1;
 
@@ -35,6 +35,9 @@ $dataset->attrSet('NUM_COL'=>pdl(long,[[1,2,3],[4,5,6]]));
 $dataset->attrSet('NUM_ROW'=>$pchar);
 $dataset->attrSet('SCALING'=>'pepe');
 $dataset->attrSet('OFFSET'=>pdl(double,[0.0074]));
+
+# Set group attribute
+$group->attrSet('GroupPDLAttr'=>pdl(long,[[1,2,3],[4,5,6]]));
 
 ######## Now Read HDF5 file  #####
 my $hdf2= new PDL::IO::HDF5($filename);
@@ -70,6 +73,8 @@ my ($numcol)=$dataset2->attrGet('NUM_COL');
 #print "numcol '$numcol'\n";
 ok($testNo++, "$numcol" eq $expected);
 
+ok($testNo++, (ref($numcol) && $numcol->isa('PDL')) );
+
 $expected = "[
  [ 'abc' 'def' 'ghi'  ] 
  [ 'jkl' 'mno' 'pqr'  ] 
@@ -89,6 +94,21 @@ $expected = '[0.0074]';
 my ($offset)=$dataset2->attrGet('OFFSET');
 #print "offset '$offset'\n";
 ok($testNo++, "$offset" eq $expected);
+
+
+# Check Group PDL Attribute
+$expected = '
+[
+ [1 2 3]
+ [4 5 6]
+]
+';
+my ($numcol2)=$group2->attrGet('GroupPDLAttr');
+#print "numcol '$numcol'\n";
+ok($testNo++, "$numcol2" eq $expected);
+ok($testNo++, (ref($numcol2) && $numcol2->isa('PDL')) );
+
+
 
 #  Testing utility functions:
 sub ok {

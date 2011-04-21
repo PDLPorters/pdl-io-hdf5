@@ -1,7 +1,7 @@
 use Config;
 
-our $VERSION = 0.62;
-pp_setversion(0.62);
+our $VERSION = 0.63;
+pp_setversion(0.63);
 
 # Necessary includes for .xs file
 pp_addhdr(<<'EOH');

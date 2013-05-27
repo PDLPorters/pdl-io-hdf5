@@ -10,7 +10,7 @@ DESCRIPTION
      This package provides an object-oriented interface for the
      PDL package to the HDF5 data-format. Information on the
      HDF5 Format can be found at the NCSA's web site at
-     http://hdf.ncsa.uiuc.edu/ .
+     http://www.hdfgroup.org/ .
 
      LIMITATIONS
  

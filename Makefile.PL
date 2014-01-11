@@ -37,17 +37,21 @@ use Config;
 ## Search for hdf5 library and include file
 #
 $ENV{'HOME'} = '' unless defined( $ENV{'HOME'} ) ;
+$ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
 
-foreach my $libdir (
-		    '/usr/local/hdf5/lib',
-		    '/usr/local/lib',
-		    '/opt/local/lib',
-		    '/usr/lib',
-		    '/opt/lib',
-		    "$ENV{HOME}/hdf5/lib",  # for local hdf5 installs
-		                  # Add new library paths here!!
-		    ) {
-
+@libdirs =  (
+    $ENV{'HDF5_PATH'}."/lib",
+    $ENV{'HDF5_PATH'}."/lib64",
+    '/usr/local/hdf5/lib',
+    '/usr/local/lib',
+    '/opt/local/lib',
+    '/usr/lib',
+    '/opt/lib',
+    '/usr/lib64'
+    );
+push(@libdirs,split(":",$ENV{'LD_LIBRARY_PATH'}));
+foreach my $libdir ( @libdirs ) {
+    
   if (-e "$libdir/libhdf5.so") {
     $hdf5_lib_path = $libdir;
     print "Found libhdf5.so at $libdir/libhdf5.so\n";
@@ -69,18 +73,17 @@ unless(defined ($hdf5_lib_path) ){
 	exit();
 } 
 
-foreach my $incdir (
-		    '/usr/local/hdf5/include',
-		    '/usr/local/include',
-		    '/opt/local/include',
-		    '/usr/include',
-		    '/opt/include',
-		    "$ENV{HOME}/hdf5/include",  # for local hdf5 installs
-
-		                  # Add new header paths here!!
-		    ) {
-
-  if (-e "$incdir/hdf5.h") {
+@incdirs =  (
+    $ENV{'HDF5_PATH'}."/include",
+    '/usr/local/hdf5/include',
+    '/usr/local/include',
+    '/opt/local/include',
+    '/usr/include',
+    '/opt/include'
+    );
+push(@incdirs,map { local $_ = $_; $_ =~ s/\/lib([^\/]+)$/\/include/; $_ } split(":",$ENV{'LD_LIBRARY_PATH'}));
+foreach my $incdir ( @incdirs ) {
+    if (-e "$incdir/hdf5.h") {
     $hdf5_include_path = $incdir;
     print "Found hdf5.h at $incdir/hdf5.h\n";
     last;
@@ -122,7 +125,7 @@ if ($Config{'osname'} =~ /win32/i) {
   $define_win32HDF = '-D _HDF5USEDLL_ -D HASATTRIBUTE ';
   print "Defining _HDF5USEDLL_ for win32\n";
 }
-
+            
 $LIBS = "-L$hdf5_lib_path -lhdf5 ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);

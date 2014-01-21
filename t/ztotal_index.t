@@ -7,15 +7,13 @@ use PDL::Types;
 
 use Data::Dumper;
 
-print "1..7\n";  
-
-my $testNo = 1;
+use Test::More tests => 7;
 
 # New File Check:
 my $filename = "newFile.hd5";
 
 my $hdfobj;
-ok($testNo++,$hdfobj = new PDL::IO::HDF5("newFile.hd5"));
+ok($hdfobj = new PDL::IO::HDF5("newFile.hd5"));
 
 # It is normally a no-no to call a internal method, but we
 #  are just testing here:
@@ -45,7 +43,7 @@ q!{
 !;
 
 # print $result;
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 # die;
 
@@ -62,7 +60,7 @@ q![
 
 #print recursiveDump(\@values);
 $result = recursiveDump(\@values);
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 @values = $hdfobj->allAttrValues('attr1','attr2');
 $baseline = 
@@ -88,7 +86,7 @@ q![
 
 #print recursiveDump(\@values);
 $result = recursiveDump(\@values);
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 my @names = $hdfobj->allAttrNames;
 
@@ -101,7 +99,7 @@ q![
 
 #print recursiveDump(\@names);
 $result = recursiveDump(\@names);
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 # Test building the groupIndex
 $hdfobj->_buildGroupIndex('attr1','attr2');
@@ -140,7 +138,7 @@ $baseline =
 #print $baseline;
 #print recursiveDump($hdfobj->{groupIndex});
 $result = recursiveDump($hdfobj->{groupIndex});
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 
 
@@ -156,19 +154,10 @@ q![
 !;
 #print recursiveDump(\@groups);
 $result = recursiveDump(\@groups);
-ok($testNo++,$baseline eq $result );
+ok($baseline eq $result );
 
 					
-print "completed\n";
 
-
-#  Testing utility functions:
-sub ok {
-        my $no = shift ;
-        my $result = shift ;
-        print "not " unless $result ;
-        print "ok $no\n" ;
-}
 
 # Dump of recursive array/hash.
 # We Could use Data:Dumper for this but it doesn't 

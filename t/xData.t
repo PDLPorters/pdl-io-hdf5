@@ -5,10 +5,7 @@ use PDL::Types;
 # Test case for HDF5 extensible datasets
 #   This is a new feature as-of version 0.64
 #
-print "1..2\n";  
-
-my $testNo = 1;
-
+use Test::More tests => 2;
 
 my $filename = "xData.hd5";
 # get rid of filename if it already exists
@@ -26,8 +23,8 @@ $dataset->set($data1, unlimited => 1);
 # read the dataset
 my $xdata = $group->dataset("xdata")->get();
 $expected = '[2 3 4 5 6 7 8 9 10 11 12]';
-print "xdata '$xdata'\n";
-ok($testNo++, "$xdata" eq $expected);
+diag "xdata '$xdata'\n";
+ok( "$xdata" eq $expected);
 
 # write more data
 my $data2 = pdl [ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0 ];
@@ -36,14 +33,5 @@ $dataset->set($data2, unlimited => 1);
 # read the dataset
 $xdata = $group->dataset("xdata")->get();
 $expected = '[2 3 4 5 6 7 8 9 10 11 12 13 14]';
-print "xdata '$xdata'\n";
-ok($testNo++, "$xdata" eq $expected);
-
-
-#  Testing utility functions:
-sub ok {
-        my $no = shift ;
-        my $result = shift ;
-        print "not " unless $result ;
-        print "ok $no\n" ;
-}
+diag "xdata '$xdata'\n";
+ok( "$xdata" eq $expected);

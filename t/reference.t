@@ -5,10 +5,7 @@ use PDL::Types;
 # Test case for HDF5 references
 #   This is a new feature as-of version 0.64
 #
-print "1..2\n";  
-
-my $testNo = 1;
-
+use Test::More tests => 2;
 
 my $filename = "reference.hd5";
 # get rid of filename if it already exists
@@ -31,7 +28,7 @@ $hdf5->reference($dataset,"myRef",\@regionStart,\@regionCount);
 $expected = 'data1, myRef';
 my @datasets1=$hdf5->datasets();
 #print "datasets '".join(", ",@datasets1)."'\n";
-ok($testNo++, join(', ',@datasets1) eq $expected);
+ok(join(', ',@datasets1) eq $expected);
 
 # dereference the dataset
 my $ref = $hdf5->dataset("myRef");
@@ -39,12 +36,4 @@ my $dereferenced = $ref->get();
 
 $expected = '[5 6 7]';
 #print "dereferenced '$dereferenced'\n";
-ok($testNo++, "$dereferenced" eq $expected);
-
-#  Testing utility functions:
-sub ok {
-        my $no = shift ;
-        my $result = shift ;
-        print "not " unless $result ;
-        print "ok $no\n" ;
-}
+ok("$dereferenced" eq $expected);

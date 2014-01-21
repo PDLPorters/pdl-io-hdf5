@@ -9,9 +9,7 @@ use PDL::Types;
 #  i.e. the way they would normally be used as described
 #  in the PDL::IO::HDF5 synopsis
 
-print "1..33\n";  
-
-my $testNo = 1;
+use Test::More tests => 33;
 
 # New File Check:
 my $filename = "newFile.hd5";
@@ -19,31 +17,31 @@ my $filename = "newFile.hd5";
 unlink $filename if( -e $filename);
 
 my $hdfobj;
-ok($testNo++,$hdfobj = new PDL::IO::HDF5("newFile.hd5"));
+ok($hdfobj = new PDL::IO::HDF5("newFile.hd5"));
 
 
 # Set attribute for file (root group)
-ok($testNo++, $hdfobj->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
+ok($hdfobj->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
 
 # Try Setting attr for an existing attr
-ok($testNo++,$hdfobj->attrSet( 'attr1' => 'dudeman23'));
+ok($hdfobj->attrSet( 'attr1' => 'dudeman23'));
 
 
 # Add a attribute and then delete it
-ok($testNo++, $hdfobj->attrSet( 'dummyAttr' => 'dummyman', 
+ok($hdfobj->attrSet( 'dummyAttr' => 'dummyman', 
 				'dummyAttr2' => 'dummyman'));
 				
-ok($testNo++, $hdfobj->attrDel( 'dummyAttr', 'dummyAttr2' ));
+ok($hdfobj->attrDel( 'dummyAttr', 'dummyAttr2' ));
 
 
 # Get list of attributes
 my @attrs = $hdfobj->attrs;
-ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+ok(join(",",sort @attrs) eq 'attr1,attr2' );
 
 # Get a list of attribute values
 my @attrValues = $hdfobj->attrGet(sort @attrs);
 
-ok($testNo++, join(",",@attrValues) eq 'dudeman23,What??' );
+ok(join(",",@attrValues) eq 'dudeman23,What??' );
 # print "Attr Values = '".join("', '",@attrValues)."'\n";
 
 ##############################################
@@ -54,7 +52,7 @@ my $dataset = $hdfobj->dataset('rootdataset');
 my $pdl = sequence(5,4);
 
 
-ok($testNo++, $dataset->set($pdl) );
+ok($dataset->set($pdl) );
 # print "pdl written = \n".$pdl."\n";
 
 # Create String dataset using PDL::Char
@@ -62,23 +60,23 @@ my $dataset2 = $hdfobj->dataset('charData');
 
 my $pdlChar = new PDL::Char( [ ["abccc", "def", "ghi"],["jkl", "mno", 'pqr'] ] );
  
-ok($testNo++,$dataset2->set($pdlChar));
+ok($dataset2->set($pdlChar));
 
 
 my $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
 
-ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+ok((($pdl - $pdl2)->sum) < .001 );
 
 
 my @dims = $dataset->dims;
 
-ok( $testNo++, join(", ",@dims) eq '5, 4' );
+ok( join(", ",@dims) eq '5, 4' );
 
 # Get a list of datasets (should be two)
 my @datasets = $hdfobj->datasets;
 
-ok($testNo++, scalar(@datasets) == 2 );
+ok( scalar(@datasets) == 2 );
 
 
 #############################################
@@ -94,24 +92,24 @@ $dataset = $subgroup->dataset('my dataset');
 $pdl = sequence(5,4)->float; # Try a non-default data type
 
 
-ok($testNo++, $dataset->set($pdl) );
+ok( $dataset->set($pdl) );
 # print "pdl written = \n".$pdl."\n";
 
 
 $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
 
-ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+ok( (($pdl - $pdl2)->sum) < .001 );
 
 # Check for the PDL returned being a float
-ok($testNo++, ($pdl->get_datatype - $PDL_F) < .001 );
+ok( ($pdl->get_datatype - $PDL_F) < .001 );
 
 # Get a hyperslab
 $pdl = $dataset->get(pdl([0,0]), pdl([4,0]));  # Get the first vector of the PDL
 
 # Check to see if the dims are as expected.
 my @pdlDims = $pdl->dims;
-ok( $testNo++, ($pdlDims[0] == 5) && ($pdlDims[1] == 1));
+ok(  ($pdlDims[0] == 5) && ($pdlDims[1] == 1));
 
 
 ### Try a non-deault data-set type (int/long) ####
@@ -121,68 +119,68 @@ $dataset = $subgroup->dataset('my dataset2');
 $pdl = sequence(5,4)->long; # Try a non-default data type
 
 
-ok($testNo++, $dataset->set($pdl) );
+ok( $dataset->set($pdl) );
 # print "pdl written = \n".$pdl."\n";
 
 
 $pdl2 = $dataset->get;
 # print "pdl read = \n".$pdl2."\n";
 
-ok($testNo++, (($pdl - $pdl2)->sum) < .001 );
+ok( (($pdl - $pdl2)->sum) < .001 );
 
 # Check for the PDL returned being a int/long
-ok($testNo++, ($pdl->get_datatype - $PDL_L) < .001 );
+ok( ($pdl->get_datatype - $PDL_L) < .001 );
 
 
 ################ Set Attributes at the Dataset Level ###############			
 					
 # Set attribute for group
-ok($testNo++, $dataset->attrSet( 'attr1' => 'DSdudeman', 'attr2' => 'DSWhat??'));
+ok( $dataset->attrSet( 'attr1' => 'DSdudeman', 'attr2' => 'DSWhat??'));
 
 # Try Setting attr for an existing attr
-ok($testNo++,$dataset->attrSet( 'attr1' => 'DSdudeman23'));
+ok($dataset->attrSet( 'attr1' => 'DSdudeman23'));
 
 
 # Add a attribute and then delete it
-ok($testNo++, $dataset->attrSet( 'dummyAttr' => 'dummyman', 
+ok( $dataset->attrSet( 'dummyAttr' => 'dummyman', 
 				'dummyAttr2' => 'dummyman'));
 				
-ok($testNo++, $dataset->attrDel( 'dummyAttr', 'dummyAttr2' ));
+ok( $dataset->attrDel( 'dummyAttr', 'dummyAttr2' ));
 
 
 # Get list of attributes
 @attrs = $dataset->attrs;
-ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+ok( join(",",sort @attrs) eq 'attr1,attr2' );
 
 # Get a list of attribute values
 @attrValues = $dataset->attrGet(sort @attrs);
 
-ok($testNo++, join(",",@attrValues) eq 'DSdudeman23,DSWhat??' );
+ok( join(",",@attrValues) eq 'DSdudeman23,DSWhat??' );
 
 ################ Set Attributes at the Group Level ###############			
 					
 # Set attribute for group
-ok($testNo++, $group->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
+ok( $group->attrSet( 'attr1' => 'dudeman', 'attr2' => 'What??'));
 
 # Try Setting attr for an existing attr
-ok($testNo++,$group->attrSet( 'attr1' => 'dudeman23'));
+ok($group->attrSet( 'attr1' => 'dudeman23'));
 
 
 # Add a attribute and then delete it
-ok($testNo++, $group->attrSet( 'dummyAttr' => 'dummyman', 
+ok( $group->attrSet( 'dummyAttr' => 'dummyman', 
 				'dummyAttr2' => 'dummyman'));
 				
-ok($testNo++, $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
+ok( $group->attrDel( 'dummyAttr', 'dummyAttr2' ));
 
 
 # Get list of attributes
 @attrs = $group->attrs;
-ok($testNo++, join(",",sort @attrs) eq 'attr1,attr2' );
+ok( join(",",sort @attrs) eq 'attr1,attr2' );
 
 # Get a list of datasets (should be none)
 @datasets = $group->datasets;
 
-ok($testNo++, scalar(@datasets) == 0 );
+ok( scalar(@datasets) == 0 );
 
 # Create another group
 my $group2 = $hdfobj->group("dude2");
@@ -192,24 +190,14 @@ my $group2 = $hdfobj->group("dude2");
 my @groups = $hdfobj->groups;
 
 # print "Root group has these groups '".join(",",sort @groups)."'\n";
-ok($testNo++, join(",",sort @groups) eq 'dude2,mygroup' );
+ok( join(",",sort @groups) eq 'dude2,mygroup' );
 
 
 # Get a list of groups in group2 (should be none)
 @groups = $group2->groups;
 
-ok($testNo++, scalar(@groups) == 0 );
+ok( scalar(@groups) == 0 );
 
 
 # unlink("newfile.hd5");
-
-print "completed\n";
-
-
-#  Testing utility functions:
-sub ok {
-        my $no = shift ;
-        my $result = shift ;
-        print "not " unless $result ;
-        print "ok $no\n" ;
-}
+# print "completed\n";

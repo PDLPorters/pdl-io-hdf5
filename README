@@ -1,4 +1,4 @@
-PDL::IO::HDF5, version 0.63
+PDL::IO::HDF5, version 0.64
 
 From The Man Pages:
 -------------------
@@ -9,7 +9,7 @@ NAME
 DESCRIPTION
      This package provides an object-oriented interface for the
      PDL package to the HDF5 data-format. Information on the
-     HDF5 Format can be found at the NCSA's web site at
+     HDF5 Format can be found at the HDF Group's web site at
      http://www.hdfgroup.org/ .
 
      LIMITATIONS
@@ -54,7 +54,7 @@ make install
 Acknowledgements
 ----------------
 
-Tbe idea for this module is based on the code of Doug Hunt's PDL::netCDF module.
+The idea for this module is based on the code of Doug Hunt's PDL::netCDF module.
 
 
 

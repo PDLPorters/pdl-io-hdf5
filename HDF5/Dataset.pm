@@ -5,7 +5,7 @@ use Carp;
 use strict;
 
 # Global mapping variables
-our ($H5T_STRING, %PDLtoHDF5internalTypeMapping, %HDF5toPDLfileMapping, %PDLtoHDF5fileMapping);
+our ($H5T_STRING, $H5T_REFERENCE, %PDLtoHDF5internalTypeMapping, %HDF5toPDLfileMapping, %PDLtoHDF5fileMapping);
 
 =head1 NAME
 
@@ -15,7 +15,7 @@ PDL::IO::HDF5::Dataset - PDL::IO::HDF5 Helper Object representing HDF5 datasets.
 
 This is a helper-object used by PDL::IO::HDF5 to interface with HDF5 format's dataset objects.
 Information on the HDF5 Format can be found
-at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
+at the HDF Group's web site at http://www.hdfgroup.org .
 
 =head1 SYNOPSIS
 
@@ -168,7 +168,10 @@ B<Usage:>
 
 =for usage
 
- $dataset->set($pdl);     # Write the array data in the dataset
+ $dataset->set($pdl, unlimited => 1);     # Write the array data in the dataset
+
+     Options:
+     unlimited     If present, the dataset is created with unlimited dimensions.
 
 =cut
 
@@ -205,8 +208,10 @@ sub set{
 
 	my $self = shift;
 
-	my ($pdl) = @_;
+	my $pdl = shift;
 
+	my %options = @_
+	    if ( scalar(@_) >= 1 );
 
 	my $parent = $self->{parent};
 	my $groupID = $parent->IDget;
@@ -253,29 +258,61 @@ sub set{
 	
 	
         my $dims = PDL::IO::HDF5::packList(@dims);
-   		
-	
-	my $dataspaceID = PDL::IO::HDF5::H5Screate_simple(scalar(@dims), $dims , $dims);
+
+	my $udims = $dims;
+	if ( exists($options{'unlimited'}) ) {
+	    my $udim = pack ("L*", (PDL::IO::HDF5::H5S_UNLIMITED()));
+	    my $rank = scalar(@dims)*2;
+	    $udims = $udim x $rank;
+	}
+	my $dataspaceID = PDL::IO::HDF5::H5Screate_simple(scalar(@dims), $dims , $udims);
         if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":set\n");
 		return undef;
 	}
 
 	if( $datasetID == 0){  # Dataset not created yet
-	
+
+	    my $propertiesID;
+	    if ( exists($options{'unlimited'}) ) {
+		$propertiesID = PDL::IO::HDF5::H5Pcreate(PDL::IO::HDF5::H5P_DATASET_CREATE());
+		if( $propertiesID < 0 ){
+		    carp("Can't Open Properties in ".__PACKAGE__.":set\n");
+		    return undef;
+		}	    
+		if ( PDL::IO::HDF5::H5Pset_chunk($propertiesID,scalar(@dims),$dims) < 0 ) {
+		    carp("Error setting chunk size in ".__PACKAGE__.":set\n");
+		    return undef;
+		}	
+		# /* Create the dataset. */
+		$datasetID = PDL::IO::HDF5::H5Dcreate($groupID, $name, $hdf5Filetype, $dataspaceID, 
+						      $propertiesID);
+	    } else {
 	       # /* Create the dataset. */
 		$datasetID = PDL::IO::HDF5::H5Dcreate($groupID, $name, $hdf5Filetype, $dataspaceID, 
-                PDL::IO::HDF5::H5P_DEFAULT());
-		if( $datasetID < 0){
-			carp("Can't Create Dataspace in ".__PACKAGE__.":set\n");
-			return undef;
+						      PDL::IO::HDF5::H5P_DEFAULT());
+	    }
+	    if( $datasetID < 0){
+		carp("Can't Create Dataspace in ".__PACKAGE__.":set\n");
+		return undef;
+	    }
+	    $self->{ID} = $datasetID;
+
+	    if ( exists($options{'unlimited'}) ) {
+		if ( PDL::IO::HDF5::H5Pclose($propertiesID) < 0 ) {
+		    carp("Error closing properties in ".__PACKAGE__.":set\n");
+		    return undef;
 		}
-		$self->{ID} = $datasetID;
+	    }
 	}
 
 	# Write the actual data:
         my $data = ${$pdl->get_dataref};
 	
+	if( PDL::IO::HDF5::H5Dextend($datasetID,$dims) < 0 ){ 
+		carp("Error extending dataset in ".__PACKAGE__.":set\n");
+		return undef;
+	}
 
 	if( PDL::IO::HDF5::H5Dwrite($datasetID, $internalhdf5_type, PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5S_ALL(), PDL::IO::HDF5::H5P_DEFAULT(),
 		$data) < 0 ){ 
@@ -359,8 +396,10 @@ to the following table.
 For HDF5 File types not in this table, this method will attempt to
 map it to the default PDL type PDL_D.
 
-B<Note:>
+If the dataset being read is a scalar reference, the referenced dataset region will be read instead.
 
+B<Note:>
+ 
 Character arrays are returned as the special L<PDL::Char> fixed-length string type. For fixed-length
 HDF5 string arrays, this is a direct mapping to the PDL::Char datatype. For HDF5 variable-length string
 arrays, the data is converted to a fixed-length character array, with a string size equal to the maximum
@@ -395,7 +434,8 @@ size of all the strings in the array.
 	 PDL::IO::HDF5::H5T_IEEE_F64LE()	=>	$PDL::Types::PDL_D
 );
 
-$H5T_STRING = PDL::IO::HDF5::H5T_STRING();  #HDF5 string type
+$H5T_STRING    = PDL::IO::HDF5::H5T_STRING   (); #HDF5 string type
+$H5T_REFERENCE = PDL::IO::HDF5::H5T_REFERENCE(); #HDF5 reference type
 
 sub get{
 
@@ -406,7 +446,7 @@ sub get{
 
 	my $pdl;
 
-	my $rc; # H5 library call return code
+ 	my $rc; # H5 library call return code
 
 	my $parent = $self->{parent};
 	my $groupID = $parent->IDget;
@@ -420,6 +460,10 @@ sub get{
 	my $ReturnType = 'PDL';	        # Default object returned is PDL. If strings are store, then this will
 					# return PDL::Char
 
+	my $isReference = 0;            # Indicates if dataset is a reference
+	my $datasetReference;           # Data set reference
+	my $referencedDatasetID;        # ID of referenced dataset
+
 	# Get the HDF5 file datatype;
         my $HDF5type = PDL::IO::HDF5::H5Dget_type($datasetID );
 	unless( $HDF5type >= 0 ){
@@ -428,7 +472,7 @@ sub get{
 	}
 
 	# Check for string type:
-	my $varLenString = 0; # Flag = 1 if reading variable-length string array
+ 	my $varLenString = 0; # Flag = 1 if reading variable-length string array
 	if( PDL::IO::HDF5::H5Tget_class($HDF5type ) == $H5T_STRING ){  # String type
 
 	        # Check for variable length string"
@@ -456,6 +500,53 @@ sub get{
 		$ReturnType = 'PDL::Char';	 # For strings, we return a PDL::Char
 
 	}
+	elsif ( PDL::IO::HDF5::H5Tget_class($HDF5type) == $H5T_REFERENCE ) { # Reference type
+
+	    # Flag that dataset is a reference
+	    $isReference = 1;
+
+	    # Check that the reference dataset is a single element
+	    my $dataspaceID = PDL::IO::HDF5::H5Dget_space($datasetID);
+	    my $Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+	    if( $Ndims != 0 ){
+	    	carp("Can't handle non-scalar references ".__PACKAGE__.":get\n");
+	    	carp("Can't close Dataspace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+	    	return undef;
+	    }	   
+
+            # Read the reference
+	    my $howBig =  PDL::IO::HDF5::H5Tget_size(PDL::IO::HDF5::H5T_STD_REF_DSETREG());
+	    $datasetReference = ' ' x $howBig;
+	    $rc = PDL::IO::HDF5::H5Dread($datasetID, PDL::IO::HDF5::H5T_STD_REF_DSETREG(), PDL::IO::HDF5::H5S_ALL(),
+					 PDL::IO::HDF5::H5S_ALL(), 
+					 PDL::IO::HDF5::H5P_DEFAULT(),
+					 $datasetReference);
+	    # Dereference the reference
+	    $referencedDatasetID = PDL::IO::HDF5::H5Rdereference($datasetID,PDL::IO::HDF5::H5R_DATASET_REGION(),$datasetReference);
+
+	    # Get the data type of the dereferenced object
+	    $HDF5type = PDL::IO::HDF5::H5Dget_type($referencedDatasetID);
+	    
+	    # Map the HDF5 file datatype to a PDL datatype
+	    $PDLtype = $PDL::Types::PDL_D; # Default type is double
+
+	    my $defaultType;
+	    foreach $defaultType( keys %HDF5toPDLfileMapping){
+		if( PDL::IO::HDF5::H5Tequal($defaultType,$HDF5type) > 0){
+		    $PDLtype = $HDF5toPDLfileMapping{$defaultType};
+		    last;
+		}
+	    }
+	    
+	    
+	    # Get the HDF5 internal datatype that corresponds to the PDL type
+	    unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){
+		carp "Error Calling ".__PACKAGE__."::set: Can't map PDL type to HDF5 datatype\n";
+		return undef;
+	    }
+	    $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
+
+	}
 	else{  # Normal Numeric Type
 		# Map the HDF5 file datatype to a PDL datatype
 		$PDLtype = $PDL::Types::PDL_D; # Default type is double
@@ -477,7 +568,16 @@ sub get{
 		$internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
 	}
 
-	my $dataspaceID = PDL::IO::HDF5::H5Dget_space($datasetID);
+	my $dataspaceID;
+	if ( $isReference == 1 ) {
+	    # Get the dataspace from the reference
+	    $dataspaceID = PDL::IO::HDF5::H5Rget_region($datasetID,PDL::IO::HDF5::H5R_DATASET_REGION(),$datasetReference);	    
+	    # Now reset the dataset ID to that of the referenced dataset for all further use
+	    $datasetID = $referencedDatasetID;
+	} else {
+	    # Get the dataspace from the dataset itself
+	    $dataspaceID = PDL::IO::HDF5::H5Dget_space($datasetID);
+	}
 	if( $dataspaceID < 0 ){
 		carp("Can't Open Dataspace in ".__PACKAGE__.":get\n");
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
@@ -497,6 +597,37 @@ sub get{
 
 	my @dims = ( 0..($Ndims-1)); 
 	my ($mem_space,$file_space);
+	if ( $isReference == 1) {
+	    my @startAt = ( 0..($Ndims-1)); 
+	    my @endAt = ( 0..($Ndims-1)); 
+	    my $startAt = PDL::IO::HDF5::packList(@startAt);
+	    my $endAt = PDL::IO::HDF5::packList(@endAt);
+	    
+	    my $rc = PDL::IO::HDF5::H5Sget_select_bounds($dataspaceID, $startAt, $endAt );
+	    
+	    if( $rc < 0 ){
+		carp("Error getting number of dims in dataspace in ".__PACKAGE__.":get\n");
+		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+		carp("Can't close DataSpace in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
+		return undef;
+	    }
+	    
+	    @startAt = PDL::IO::HDF5::unpackList($startAt);
+	    @endAt   = PDL::IO::HDF5::unpackList($endAt);
+	    for(my $i=0;$i<=$#dims;++$i) {
+		$dims[$i] = $endAt[$i]-$startAt[$i]+1;
+	    }
+	    if (not defined $start) {
+		$start  = PDL->zeros($Ndims);
+		$end    = PDL->zeros($Ndims);
+		$start .= PDL->pdl(@startAt);
+		$end   .= PDL->pdl(@endAt);
+	    } else {
+		$start += PDL->pdl(@startAt);
+		$end   += PDL->pdl(@startAt);
+	    }
+	}
+
 	if (not defined $start) {
 	    # Initialize Dims structure:
 	    my $dims = PDL::IO::HDF5::packList(@dims);
@@ -555,13 +686,13 @@ sub get{
 	    my $stride2 = PDL::IO::HDF5::packList(reverse($stride->list));
 	    my $block=PDL::Core::ones($Ndims);
 	    my $block2 = PDL::IO::HDF5::packList(reverse($block->list));
-
+	    
 	    # Slice the data
 	    $file_space = PDL::IO::HDF5::H5Dget_space($datasetID);
 	    $rc=PDL::IO::HDF5::H5Sselect_hyperslab($file_space, 0, 
-			 $start2, $stride2, $length2, $block2);
-
-	
+						   $start2, $stride2, $length2, $block2);
+	    
+	    
 	    if( $rc < 0 ){
 		carp("Error slicing data from file in ".__PACKAGE__.":get\n");
 		carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
@@ -570,8 +701,8 @@ sub get{
 	    }
 	    
 	    $mem_space = PDL::IO::HDF5::H5Screate_simple($Ndims, $mem_dims, 
-							    $mem_dims);
-
+							 $mem_dims);
+	    
 	}
 
         # Create initial PDL null array with the proper datatype	
@@ -584,7 +715,7 @@ sub get{
 	    
 	    @pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
 	    #  1st PDL dim is the string length (for PDL::Char)
-	    
+
 	    $datatypeSize = PDL::howbig($pdl->get_datatype);
 	}
 	elsif( $varLenString ){ # Variable-length String
@@ -598,9 +729,11 @@ sub get{
 	else{ # Normal Numeric types
 	      # (Variable length string arrays will be converted to fixed-length strings later)
 	    @pdldims = (reverse(@dims)); 		# HDF5 stores columns/rows in reverse order than pdl
-	    
+
 	    $datatypeSize = PDL::howbig($pdl->get_datatype);
 	}
+	
+	$pdl->setdims(\@pdldims);
 	
 	my $nelems = 1;
 	foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
@@ -1028,12 +1161,14 @@ sub attrGet {
 	
 	my $typeID; # id used for attribute
 	my $dataspaceID; # id used for the attribute dataspace
-	
+
 	my $attrID;
+	my $stringSize;
+	my $Ndims;
 	foreach $attrName( @attrs){
-		
+	    undef($stringSize);		
 		$attrValue = undef;
-		
+
 		# Open the Attribute
 		$attrID = PDL::IO::HDF5::H5Aopen_name($datasetID, $attrName );
 		unless( $attrID >= 0){
@@ -1059,7 +1194,7 @@ sub attrGet {
 
 
 		# Get the number of dims:
-		my $Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
+		$Ndims = PDL::IO::HDF5::H5Sget_simple_extent_ndims($dataspaceID);
 
 		unless( $Ndims >= 0){
 			if( $Ndims < 0 ){
@@ -1077,7 +1212,6 @@ sub attrGet {
 		
 		if ($Ndims == 0) {
 		    # If it is a scalar we do this
-
 		# Get the HDF5 dataset datatype;
 		    $HDF5type = PDL::IO::HDF5::H5Aget_type($attrID );
 
@@ -1099,15 +1233,62 @@ sub attrGet {
 		}
 		
 		#init attr value to the length of the type
-		$attrValue = ' ' x ($size);
-		
-		if( PDL::IO::HDF5::H5Aread($attrID, $HDF5type, $attrValue) < 0 ){
+		my $data = ' ' x ($size);
+		    my $PDLtype;
+		    my $ReturnType;
+		    my $internalhdf5_type;
+		if( PDL::IO::HDF5::H5Tget_class($HDF5type ) == PDL::IO::HDF5::H5T_STRING() ){  # String type
+		    $PDLtype = $PDL::Types::PDL_B; 
+		    $internalhdf5_type =  $HDF5type; # internal storage the same as the file storage.
+		    $ReturnType = 'PDL::Char';	 # For strings, we return a PDL::Char
+		    $stringSize = PDL::IO::HDF5::H5Tget_size($HDF5type);
+		    unless( $stringSize >= 0 ){
+			carp "Error Calling ".__PACKAGE__."::attrGet: Can't get HDF5 String Datatype Size.\n";
+			carp("Can't close Datatype in ".__PACKAGE__.":get\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
+			return undef;
+		    }
+		}
+		else{  # Normal Numeric Type
+		    # Map the HDF5 file datatype to a PDL datatype
+		    $PDLtype = $PDL::Types::PDL_D; # Default type is double
+		    $ReturnType = 'PDL';
+
+		    my $defaultType;
+		    foreach $defaultType( keys %HDF5toPDLfileMapping){
+			if( PDL::IO::HDF5::H5Tequal($defaultType,$HDF5type) > 0){
+			    $PDLtype = $HDF5toPDLfileMapping{$defaultType};
+			    last;
+			}
+		    }
+		    
+		    # Get the HDF5 internal datatype that corresponds to the PDL type
+		    unless( defined($PDLtoHDF5internalTypeMapping{$PDLtype}) ){
+			carp "Error Calling ".__PACKAGE__."::attrGet: Can't map PDL type to HDF5 datatype\n";
+			return undef;
+		    }
+		    $internalhdf5_type = $PDLtoHDF5internalTypeMapping{$PDLtype};
+		}
+
+		if( PDL::IO::HDF5::H5Aread($attrID, $internalhdf5_type, $data) < 0 ){
 			carp "Error Calling ".__PACKAGE__."::attrGet: Can't read Attribute Value for Attribute name '$attrName'.\n";
 			carp("Can't close Datatype in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Tclose($HDF5type) < 0);
 			carp("Can't close DataSpace in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Sclose($dataspaceID) < 0);
 			carp("Can't close Attribute in ".__PACKAGE__.":attrGet\n") if( PDL::IO::HDF5::H5Aclose($attrID) < 0);
 			next;
 		}			
+		$attrValue = $ReturnType->null;
+		$attrValue->set_datatype($PDLtype);
+		    my @pdldims;
+		    if( defined( $stringSize )){  # String types
+			@pdldims = ( $stringSize );
+		    } else {	    
+			@pdldims = ( 1 );
+		    }
+		    $attrValue->setdims(\@pdldims);
+		# Update the PDL data with the data read from the file
+		${$attrValue->get_dataref()} = $data;
+		$attrValue->upd_data();
+		
 		    # End of scalar option
 		} else {
 		    # This is a PDL
@@ -1160,8 +1341,9 @@ sub attrGet {
                                 PDL::IO::HDF5::H5Tset_size( $internalhdf5_type, PDL::IO::HDF5::H5T_VARIABLE() );
         
                         }
-                        
+			
 			$PDLtype = $PDL::Types::PDL_B; 
+			$internalhdf5_type =  $HDF5type; # internal storage the same as the file storage.
 			$typeID=$HDF5type;
 			$ReturnType = 'PDL::Char';	 # For strings, we return a PDL::Char
 			
@@ -1212,10 +1394,9 @@ sub attrGet {
 		    # Create initial PDL null array with the proper datatype	
 		    $attrValue = $ReturnType->null;
 		    $attrValue->set_datatype($PDLtype);
-		    
 		    my @pdldims;  # dims of the PDL
 		    my $datatypeSize; # Size of one element of data stored
-		    if( defined( $stringSize )){ # Fixed-Length String types
+		    if( defined( $stringSize )){  # Fixed-Length String types
 		
 			@pdldims = ($stringSize,reverse(@dims)); # HDF5 stores columns/rows in reverse order than pdl,
 			#  1st PDL dim is the string length (for PDL::Char)
@@ -1237,6 +1418,7 @@ sub attrGet {
 
 		    }
 		    
+		    $attrValue->setdims(\@pdldims);
 		    
 		    my $nelems = 1;
 		    foreach (@pdldims){ $nelems *= $_; }; # calculate the number of elements
@@ -1309,8 +1491,15 @@ sub attrGet {
 
 	}
 	continue{
-		
-		push @attrValues, $attrValue;
+	    if ( $Ndims == 0 ) {
+                if (defined($stringSize)) {
+                    push @attrValues, $attrValue->atstr(0);
+                } else {
+                    push @attrValues, $attrValue->index(0);
+                }
+            } else {
+                push @attrValues, $attrValue;
+            }
 	}
 
 	return @attrValues;

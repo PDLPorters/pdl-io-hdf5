@@ -1,7 +1,7 @@
 use Config;
 
-our $VERSION = 0.63;
-pp_setversion(0.63);
+our $VERSION = 0.64;
+pp_setversion(0.64);
 
 # Necessary includes for .xs file
 pp_addhdr(<<'EOH');
@@ -18,9 +18,7 @@ EOH
 
 pp_bless ("PDL::IO::HDF5");
 
-
-
-                     
+                 
 pp_addpm(<<'EOPM');
 
 
@@ -33,7 +31,7 @@ PDL::IO::HDF5 - PDL Interface to the HDF5 Data Format.
 
 This package provides an object-oriented interface for L<PDL>s to
 the HDF5 data-format. Information on the HDF5 Format can be found
-at the NCSA's web site at http://www.hdfgroup.org .
+at the HDF Group's web site at http://www.hdfgroup.org .
 
 =head2 LIMITATIONS
 
@@ -58,39 +56,44 @@ Only HDF5 Simple dataspaces are supported.
   use PDL::IO::HDF5;
 
   # Files #######
-  my $newfile = new PDL::IO::HDF5("newfile.hdf");         # create new hdf5 or open existing file.
-  my $attrValue = $existingFile->attrGet('AttrName'); # Get attribute value for file
-  $existingFile->attSet('AttrName' => 'AttrValue');   # Set attribute value(s) for file
+  my $newfile = new PDL::IO::HDF5("newfile.hdf");        # create new hdf5 or open existing file.
+  my $attrValue = $existingFile->attrGet('AttrName');    # Get attribute value for file
+  $existingFile->attSet('AttrName' => 'AttrValue');      # Set attribute value(s) for file
 
-  #Groups ######
-  my $group = $newfile->group("/mygroup");            # create a new or open existing group
-  my @groups = $existingFile->groups;      	      # get a list of all the groups at the root '/'
-					              # level.
-  my @groups = $group->groups;             	      # get a list of all the groups at the "mygroup"
-					              # level.
-  my $group2 = $group->group('newgroup');             # Create/open a new group in existing group "mygroup"
+  # Groups ######
+  my $group = $newfile->group("/mygroup");               # create a new or open existing group
+  my @groups = $existingFile->groups;      	         # get a list of all the groups at the root '/'
+					                 # level.
+  my @groups = $group->groups;             	         # get a list of all the groups at the "mygroup"
+					                 # level.
+  my $group2 = $group->group('newgroup');                # Create/open a new group in existing group "mygroup"
 
-  my $attrValue = $group->attrGet('AttrName');        # Get attribute value for a group
-  $group->attrSet('AttrName' => 'AttrValue');         # Set attribute value(s) for a group
-  $group->attrDel('AttrName1', 'AttrName2');          # Delete attribute(s) for a group
-  @attrs = $group->attrs;                             # Get List of attributes for a group
+  $group->unlink('datasetName');                         # Delete a dataset from a group
+
+  $group->reference($dataset,'refName',\@start,\@count); # Create a scalar reference to a subregion of a
+                                                         # dataset, with specified start index and count.
+
+  my $attrValue = $group->attrGet('AttrName');           # Get attribute value for a group
+  $group->attrSet('AttrName' => 'AttrValue');            # Set attribute value(s) for a group
+  $group->attrDel('AttrName1', 'AttrName2');             # Delete attribute(s) for a group
+  @attrs = $group->attrs;                                # Get List of attributes for a group
 
   # Data Sets ########
-  my $dataset = $group->dataset( 'datasetName');      # create a new or open existing dataset
-						      #  in an existing group
-  my $dataset = $newfile->dataset( 'datasetName');    # create a new or open existing dataset
-						      #  in the root group of a file
+  my $dataset = $group->dataset( 'datasetName');         # create a new or open existing dataset
+						         #  in an existing group
+  my $dataset = $newfile->dataset( 'datasetName');       # create a new or open existing dataset
+						         #  in the root group of a file
 
-  my $dataset2 = $newfile->dataset( 'datasetName');   # create a new or open existing dataset
-						      # in the root group.
-  my @datasets =  $existingFile->datasets;            # get a list of all datasets in the root '/' group
-  my @datasets =  $group->datasets;                   # get a list of all datasets in a group
-  @dims = $dataset->dims;                             # get a list of dimensions for the dataset
-  $pdl = $dataset->get();                             # Get the array data in the dataset
-  $pdl = $dataset->get($start,$length,$stride);       # Get a slice or hyperslab of the array data in the dataset
-  $dataset->set($pdl);                                # Set the array data in the dataset
-  my $attrValue = $dataset->attrGet('AttrName');      # Get attribute value for a dataset
-  $dataset->attSet('AttrName' => 'AttrValue');        # Set attribute value(s) for a dataset
+  my $dataset2 = $newfile->dataset( 'datasetName');      # create a new or open existing dataset
+						         # in the root group.
+  my @datasets =  $existingFile->datasets;               # get a list of all datasets in the root '/' group
+  my @datasets =  $group->datasets;                      # get a list of all datasets in a group
+  @dims = $dataset->dims;                                # get a list of dimensions for the dataset
+  $pdl = $dataset->get();                                # Get the array data in the dataset
+  $pdl = $dataset->get($start,$length,$stride);          # Get a slice or hyperslab of the array data in the dataset
+  $dataset->set($pdl, unlimited => 1);                   # Set the array data in the dataset
+  my $attrValue = $dataset->attrGet('AttrName');         # Get attribute value for a dataset
+  $dataset->attSet('AttrName' => 'AttrValue');           # Set attribute value(s) for a dataset
 
 =head1 MEMBER DATA
 
@@ -356,6 +359,33 @@ sub groups {
 
 }
 
+
+=head2 unlink
+
+=for ref
+
+Unlink an object from the root "/" group (i.e. top level)
+of the HDF5 file.
+
+
+B<Usage:>
+
+=for usage
+
+   $HDFfile->unlink($name);
+   
+
+=cut
+
+sub unlink {
+	my $self    = shift;
+	my $name    = $_[0];
+
+	$self->group("/")->unlink($name);
+	return 1;
+}
+
+
 =head2 dataset
 
 =for ref
@@ -557,6 +587,40 @@ sub attrs {
 	my $self = shift;
 
 	return $self->group("/")->attrs;
+
+ }
+
+=head2 reference
+
+=for ref
+
+Create a reference to part of a dataset in the root "/" group of the file.
+
+
+B<Usage:>
+
+=for usage
+
+   $HDFfile->reference;
+
+Note: This is a convienence method that is equivalent to:
+
+  $HDFfile->group("/")->reference($referenceName,$datasetObj,@regionStart,@regionCount);
+
+Create a reference named $referenceName within the root group "/" to a subroutine of
+the dataset $datasetObj. The region to be referenced is defined by the @regionStart
+and @regionCount arrays.
+
+=cut
+
+sub reference {
+	my $self = shift;
+	my $datasetObj    = shift;
+	my $referenceName = shift;
+	my @regionStart   = shift;
+	my @regionCount   = shift;
+
+	return $self->group("/")->reference($datasetObj,$referenceName,\@regionStart,\@regionCount);
 
  }
 
@@ -1068,9 +1132,13 @@ pp_addpm(<<'EOPM');
 	return @list;
 }
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 John Cerney, j-cerney1@raytheon.com
+
+Andrew Benson, abenson@obs.carnegiescience.edu
+
+=cut
 
 EOPM
 
@@ -1167,12 +1235,17 @@ herr_t H5Sclose(hid_t space_id);
 int H5Sget_simple_extent_ndims(hid_t space_id);
 int H5Sget_simple_extent_dims(hid_t space_id, hsize_t *dims, hsize_t *maxdims);
 herr_t H5Sselect_hyperslab(hid_t space_id, int op, const hsize_t *start, const hsize_t *stride, const hsize_t *count, const hsize_t *block);
+herr_t H5Sget_select_bounds(hid_t space_id, hsize_t *start, hsize_t *end);
+hid_t H5Pcreate(hid_t cls_id);
+herr_t H5Pset_chunk(hid_t plist, int ndims, const hsize_t *dim);
+herr_t H5Pclose(hid_t plist);
 #
 #
 # Dataset Functions
 hid_t H5Dcreate (hid_t loc_id, const char *name, hid_t type_id,  hid_t space_id, hid_t create_plist_id); 
 hid_t H5Dopen (hid_t loc_id, const char *name);
 herr_t H5Dwrite (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, const char * buf);
+herr_t H5Dextend(hid_t dataset_id, const hsize_t *size);
 # H5Dread buf type changed from void * to I8 * so that is can be catergorized separately in the
 #  typemap as a T_PVI traslation
 herr_t H5Dread (hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_t file_space_id, hid_t xfer_plist_id, I8 * buf);
@@ -1216,6 +1289,16 @@ htri_t H5Tequal(hid_t type_id1, hid_t type_id2);
 H5T_class_t H5Tget_class(hid_t type_id);
 htri_t H5Tis_variable_str(hid_t type_id);
 
+# Reference Functions:
+H5G_obj_t H5Rget_obj_type(hid_t id, H5R_type_t ref_type, I8 *ref);
+hid_t H5Rget_region(hid_t dataset, H5R_type_t ref_type, I8 *ref);
+hid_t H5Rdereference(hid_t dataset, H5R_type_t ref_type, I8 *ref);
+herr_t H5Rcreate(I8 *ref, hid_t loc_id, const char *name, H5R_type_t ref_type, hid_t space_id);
+
+# Link functions:
+herr_t H5Ldelete(hid_t loc_id, const char *name, hid_t lapl_id);
+
+
 EODEF
 
 
@@ -1228,6 +1311,7 @@ pp_add_exported('', <<'EOPM');
 	H5F_ACC_RDWR
 	H5F_ACC_TRUNC
 	H5P_DEFAULT
+	H5P_DATASET_CREATE
 	H5S_ALL
 	H5S_UNLIMITED
 	H5T_ALPHA_B16
@@ -1356,6 +1440,8 @@ pp_add_exported('', <<'EOPM');
 	H5T_UNIX_D32LE
 	H5T_UNIX_D64BE
 	H5T_UNIX_D64LE
+	H5T_REFERENCE
+	H5R_DATASET_REGION
 EOPM
 
 ###############################################################
@@ -1593,6 +1679,12 @@ int arg;
 	if (strEQ(name, "H5P_DEFAULT"))
 #ifdef H5P_DEFAULT
 	    return H5P_DEFAULT;
+#else
+	    goto not_there;
+#endif
+	if (strEQ(name, "H5P_DATASET_CREATE"))
+#ifdef H5P_DATASET_CREATE
+	    return H5P_DATASET_CREATE;
 #else
 	    goto not_there;
 #endif
@@ -2360,6 +2452,10 @@ int arg;
 #else
 	    goto not_there;
 #endif
+	if (strEQ(name, "H5T_REFERENCE"))
+	    return H5T_REFERENCE; /* This was manually enter to get the enumerated type */
+	if (strEQ(name, "H5R_DATASET_REGION"))
+	    return H5R_DATASET_REGION; /* This was manually enter to get the enumerated type */
 	break;
     case 'I':
 	break;
@@ -2426,12 +2522,12 @@ use PDL::Lite;
 use PDL::Char;
 
 
-use PDL::IO::HDF5::Group;
 
 # Require needed here becuase dataset uses some of the XS 
 #  calls that are defined in PDL::IO::HDF5 (like PDL::IO::HDF5::H5T_NATIVE_CHAR() )
 #  Doing a 'use' would make use of the calls before they are defined.
 #
+require PDL::IO::HDF5::Group;
 require PDL::IO::HDF5::Dataset;
 
 
@@ -2649,7 +2745,7 @@ CODE:
         RETVAL = H5T_VARIABLE;
 OUTPUT:
 	RETVAL
-	
+
 EOXS
 
 # Don't import anything from core but barf

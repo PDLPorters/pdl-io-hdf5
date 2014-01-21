@@ -6,7 +6,7 @@ use PDL;
 use PDL::Char;
 use PDL::IO::HDF5;
 
-print "1..5\n";  
+print "1..6\n";  
 
 my $testNo = 1;
 
@@ -15,10 +15,9 @@ my $testNo = 1;
 my $filename = "varlen.h5";
 
 my $h5obj;
-ok($testNo++,$h5obj = new PDL::IO::HDF5($filename));
+ok($testNo++,$h5obj = new PDL::IO::HDF5(">".$filename));
 
 my $dataset = $h5obj->dataset("Dataset");
-
 
 my $pdl = $dataset->get();
 
@@ -44,6 +43,9 @@ ok( $testNo++, join(", ", @dims) eq "14, 4");
 #print $pdl->atstr(2)."\n";
 ok( $testNo++,   $pdl->atstr(2) eq "Attr String 3");
 
+###### Now check variable-length string attribute scalar ###
+($pdl) = $dataset->attrGet('attr2');
+ok( $testNo++, $pdl eq "dude");
 
 exit;
 

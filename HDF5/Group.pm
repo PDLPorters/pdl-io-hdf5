@@ -13,7 +13,7 @@ PDL::IO::HDF5::Group - PDL::IO::HDF5 Helper Object representing HDF5 groups.
 
 This is a helper-object used by PDL::IO::HDF5 to interface with HDF5 format's group objects.
 Information on the HDF5 Format can be found
-at the NCSA's web site at http://hdf.ncsa.uiuc.edu/ .
+at the HDF Group's web site at http://www.hdfgroup.org .
 
 =head1 SYNOPSIS
 
@@ -152,7 +152,7 @@ B<Usage:>
 
 sub DESTROY {
   my $self = shift;
-  #print "In Group DEstroy\n";
+  #print "In Group Destroy\n";
   if( PDL::IO::HDF5::H5Gclose($self->{ID}) < 0){
 	warn("Error closing HDF5 Group '".$self->{name}."' in file '".$self->{parentName}."'\n");
   }
@@ -165,7 +165,7 @@ sub DESTROY {
 
 Set the value of an attribute(s)
 
-Attribute types supported are null-terminated strings and PDL matrices
+Supports null-terminated strings, integers and floating point scalar and 1D array attributes.
 
 B<Usage:>
 
@@ -185,7 +185,7 @@ Returns undef on failure, 1 on success.
 
 sub attrSet {
 	my $self = shift;
-	
+
 	# Attribute setting for groups is exactly like datasets
 	#  Call datasets directly (This breaks OO inheritance, but is 
 	#   better than duplicating code from the dataset object here
@@ -201,7 +201,7 @@ sub attrSet {
 
 Get the value of an attribute(s)
 
-Currently the only attribute types supported are null-terminated strings.
+Supports null-terminated strings, integer and floating point scalar and 1D array attributes.
 
 B<Usage:>
 
@@ -214,7 +214,7 @@ B<Usage:>
 
 sub attrGet {
 	my $self = shift;
-	
+
 	
 	# Attribute reading for groups is exactly like datasets
 	#  Call datasets directly (This breaks OO inheritance, but is 
@@ -573,6 +573,135 @@ sub nameGet{
 	return $self->{name};
 		
 }
+####---------------------------------------------------------
+
+=head2 reference
+
+=for ref
+
+Creates a reference to a region of a dataset.
+
+B<Usage:>
+
+=for usage
+
+  $groupObj->reference($referenceName,$datasetObj,@regionStart,@regionCount);
+
+Create a reference named $referenceName within the group $groupObj to a subroutine of
+the dataset $datasetObj. The region to be referenced is defined by the @regionStart
+and @regionCount arrays.
+
+=cut
+
+
+sub reference{
+
+	my $self          = shift;
+	my $datasetObj    = shift;
+	my $referenceName = shift;
+	my @regionStart   = shift;
+	my @regionCount   = shift;
+
+	# Get the dataset ID.
+	my $dataSubsetID = $datasetObj->IDget;
+
+	# Get the dataspace of the dataset.
+	my $dataSubsetSpaceID = PDL::IO::HDF5::H5Dget_space($dataSubsetID);
+	if( $dataSubsetSpaceID <= 0 ){
+	    carp("Can't get dataspacein ".__PACKAGE__.":reference\n");
+	    return undef;
+	}
+
+        # Select a hyperslab from this dataspace.
+	my $Ndims   = $#regionStart+1;
+	my $start   = new PDL @regionStart;
+	my $length  = new PDL @regionCount;
+	my $start2  = PDL::IO::HDF5::packList(reverse($start->list));
+	my $length2 = PDL::IO::HDF5::packList(reverse($length->list));
+	my $stride  = PDL::Core::ones($Ndims);
+	my $stride2 = PDL::IO::HDF5::packList(reverse($stride->list));
+	my $block   = PDL::Core::ones($Ndims);
+	my $block2  = PDL::IO::HDF5::packList(reverse($block->list));
+	my $rc = PDL::IO::HDF5::H5Sselect_hyperslab($dataSubsetSpaceID,0,$start2,$stride2,$length2,$block2);
+	if ( $rc < 0 ) {
+	    carp("Error slicing data space in ".__PACKAGE__.":reference\n");
+	    carp("Can't close DataSpace in ".__PACKAGE__.":reference\n") if( PDL::IO::HDF5::H5Sclose($dataSubsetSpaceID) < 0);
+	    return undef;
+	}
+
+        # Create a dataspace for the reference dataset.
+	my $dataspaceID = PDL::IO::HDF5::H5Screate_simple(0,0,0);
+        if( $dataspaceID < 0 ){
+	    carp("Can't Open Dataspace in ".__PACKAGE__.":reference\n");
+	    return undef;
+	}
+
+        # Create the reference dataset.
+	my $dataSetID = PDL::IO::HDF5::H5Dcreate($self->{ID},$referenceName,
+						 PDL::IO::HDF5::H5T_STD_REF_DSETREG(),
+						 $dataspaceID, 
+						 PDL::IO::HDF5::H5P_DEFAULT());
+	if( $dataSetID < 0){
+	    carp("Can't Create Dataset in ".__PACKAGE__.":reference\n");
+	    return undef;
+	}
+
+        # Create the reference.
+	my $howBig =  PDL::IO::HDF5::H5Tget_size(PDL::IO::HDF5::H5T_STD_REF_DSETREG());
+	my $datasetReference = ' ' x $howBig;
+	if ( PDL::IO::HDF5::H5Rcreate($datasetReference,$datasetObj->{parent}->{ID},$datasetObj->{name},PDL::IO::HDF5::H5R_DATASET_REGION(),$dataSubsetSpaceID) < 0 ) {
+	    carp("Can't Create Reference Dataset in ".__PACKAGE__.":reference\n");
+	    return undef;
+	}
+
+        # Write the reference dataset.
+	if( PDL::IO::HDF5::H5Dwrite($dataSetID,PDL::IO::HDF5::H5T_STD_REF_DSETREG(),PDL::IO::HDF5::H5S_ALL(),PDL::IO::HDF5::H5S_ALL(),PDL::IO::HDF5::H5P_DEFAULT(),$datasetReference) < 0 ){ 
+	    carp("Error Writing to dataset in ".__PACKAGE__.":reference\n");
+	    return undef;
+	    
+	}
+
+        # Close the dataset dataspace.
+	PDL::IO::HDF5::H5Sclose($dataspaceID);
+	PDL::IO::HDF5::H5Sclose($dataSubsetSpaceID);
+	PDL::IO::HDF5::H5Dclose($dataSetID);
+	return 1;
+}	
+####---------------------------------------------------------
+
+=head2 unlink
+
+=for ref
+
+Unlink an object from a group.
+
+B<Usage:>
+
+=for usage
+
+  $groupObj->unlink($objectName);
+
+Unlink the named object from the group.
+
+=cut
+
+
+sub unlink{
+
+	my $self          = shift;
+	my $objectName    = shift;
+
+	# Get the dataset ID.
+	my $groupID = $self->{ID};
+
+	# Do the unlink.
+	if ( PDL::IO::HDF5::H5Ldelete($groupID,$objectName,PDL::IO::HDF5::H5P_DEFAULT()) < 0 ) {
+	    carp("Can't unlink object in ".__PACKAGE__.":unlink\n");
+	    return undef;
+	}
+
+	return 1;
+}	
 
 1;
 

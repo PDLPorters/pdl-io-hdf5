@@ -5,9 +5,9 @@ use PDL::Types;
 
 
 # Test case for HDF5 attributes that are pdls 
-#   This is a new feature as-of version 0.6
+#   This is a new feature as-of version 0.64
 #
-print "1..9\n";  
+print "1..13\n";  
 
 my $testNo = 1;
 
@@ -25,16 +25,20 @@ my $bt=pdl([[1.2,1.3,1.4],[1.5,1.6,1.7],[1.8,1.9,2.0]]);
 
 my $group=$hdf5->group('Radiometric information');
 
-# Store a dadtaset
+# Store a dataset
 my $dataset=$group->dataset('SP_BT');
 $dataset->set($bt);
 
 # Store a scalar and pdl attribute
 $dataset->attrSet('UNITS'=>'K');
 $dataset->attrSet('NUM_COL'=>pdl(long,[[1,2,3],[4,5,6]]));
+$dataset->attrSet('NUM_COLLONG'=>pdl(longlong,[[123456789123456784,2,3],[4,5,6]]));
 $dataset->attrSet('NUM_ROW'=>$pchar);
 $dataset->attrSet('SCALING'=>'pepe');
 $dataset->attrSet('OFFSET'=>pdl(double,[0.0074]));
+$dataset->attrSet('ID'=>pdl(long,87));
+$dataset->attrSet('IDLONG'=>pdl(longlong,123456789123456784));
+$dataset->attrSet('TEMPERATURE'=>pdl(double,3.1415927));
 
 # Set group attribute
 $group->attrSet('GroupPDLAttr'=>pdl(long,[[1,2,3],[4,5,6]]));
@@ -75,6 +79,11 @@ ok($testNo++, "$numcol" eq $expected);
 
 ok($testNo++, (ref($numcol) && $numcol->isa('PDL')) );
 
+$expected = '123456789123456784                  2                  3                  4                  5                  6';
+my ($numcollong)=$dataset2->attrGet('NUM_COLLONG');
+#print "numcollong '$numcollong'\n";
+ok($testNo++, sprintf("%18i %18i %18i %18i %18i %18i",$numcollong->list()) eq $expected);
+
 $expected = "[
  [ 'abc' 'def' 'ghi'  ] 
  [ 'jkl' 'mno' 'pqr'  ] 
@@ -94,6 +103,24 @@ $expected = '[0.0074]';
 my ($offset)=$dataset2->attrGet('OFFSET');
 #print "offset '$offset'\n";
 ok($testNo++, "$offset" eq $expected);
+
+
+$expected = '87';
+my ($id)=$dataset2->attrGet('ID');
+#print "id '$id'\n";
+ok($testNo++, "$id" eq $expected);
+
+
+$expected = '123456789123456784';
+my ($idlong)=$dataset2->attrGet('IDLONG');
+#print "idlong '$idlong'\n";
+ok($testNo++, "$idlong" eq $expected);
+
+
+$expected = '3.1415927';
+my ($temperature)=$dataset2->attrGet('TEMPERATURE');
+#print "temperature '$temperature'\n";
+ok($testNo++, "$temperature" eq $expected);
 
 
 # Check Group PDL Attribute

@@ -9,7 +9,7 @@ use PDL::IO::HDF5;
 use Test::More tests => 6;
 
 # New File Check:
-my $filename = "varlen.h5";
+my $filename = "varlen.hdf5";
 
 my $h5obj;
 ok($h5obj = new PDL::IO::HDF5(">".$filename));

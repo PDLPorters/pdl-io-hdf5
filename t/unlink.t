@@ -8,7 +8,7 @@ use PDL::Types;
 #
 use Test::More tests => 2;
 
-my $filename = "unlink.hd5";
+my $filename = "unlink.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
@@ -33,3 +33,6 @@ $expected = '';
 my @datasets2=$group->datasets();
 #print "datasets '".join(", ",@datasets2)."'\n";
 ok(join(', ',@datasets2) eq $expected);
+
+# clean up file
+unlink $filename if( -e $filename);

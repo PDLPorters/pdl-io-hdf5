@@ -9,7 +9,7 @@ use PDL::Types;
 #
 use Test::More tests => 13;
 
-my $filename = "newFile.hd5";
+my $filename = "newFile.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
@@ -131,3 +131,6 @@ my ($numcol2)=$group2->attrGet('GroupPDLAttr');
 #print "numcol '$numcol'\n";
 ok("$numcol2" eq $expected);
 ok((ref($numcol2) && $numcol2->isa('PDL')) );
+
+# clean up file
+unlink $filename if( -e $filename);

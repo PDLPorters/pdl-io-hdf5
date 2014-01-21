@@ -13,7 +13,7 @@
  my $maxElements = 50;  # Largest Array  (in number of elements) that we 
  			# will try to show in a popup balloon
 
- my $filename = shift @ARGV || 'newFile.hd5';
+ my $filename = shift @ARGV || 'newFile.hdf5';
 
  my $mw = MainWindow->new;
 

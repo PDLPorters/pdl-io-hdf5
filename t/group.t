@@ -10,12 +10,12 @@ use PDL::IO::HDF5::Dataset;
 use Test::More tests => 17;
 
 # New File Check:
-my $filename = "newFile.hd5";
+my $filename = "newFile.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
 my $hdfobj;
-ok($hdfobj = new PDL::IO::HDF5("newFile.hd5"));
+ok($hdfobj = new PDL::IO::HDF5($filename));
 
 my $group = new PDL::IO::HDF5::Group( name => '/dude', parent => $hdfobj,
 					 fileObj => $hdfobj);
@@ -108,9 +108,7 @@ ok( $dataset->attrDel( 'dummyAttr', 'dummyAttr2' ));
 @attrs = $dataset->attrs;
 ok( join(",",sort @attrs) eq 'attr1,attr2' );
 
+# clean up file
+unlink $filename if( -e $filename);
 
-
-
-
-unlink("newfile.hd5");
 #print "completed\n";

@@ -10,10 +10,10 @@ use Data::Dumper;
 use Test::More tests => 7;
 
 # New File Check:
-my $filename = "newFile.hd5";
+my $filename = "total.hdf5";
 
 my $hdfobj;
-ok($hdfobj = new PDL::IO::HDF5("newFile.hd5"));
+ok($hdfobj = new PDL::IO::HDF5($filename));
 
 # It is normally a no-no to call a internal method, but we
 #  are just testing here:
@@ -156,8 +156,8 @@ q![
 $result = recursiveDump(\@groups);
 ok($baseline eq $result );
 
-					
-
+# clean up file
+unlink $filename if( -e $filename);					
 
 # Dump of recursive array/hash.
 # We Could use Data:Dumper for this but it doesn't 

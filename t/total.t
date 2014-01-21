@@ -12,12 +12,12 @@ use PDL::Types;
 use Test::More tests => 33;
 
 # New File Check:
-my $filename = "newFile.hd5";
+my $filename = "total.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
 my $hdfobj;
-ok($hdfobj = new PDL::IO::HDF5("newFile.hd5"));
+ok($hdfobj = new PDL::IO::HDF5($filename));
 
 
 # Set attribute for file (root group)
@@ -198,6 +198,4 @@ ok( join(",",sort @groups) eq 'dude2,mygroup' );
 
 ok( scalar(@groups) == 0 );
 
-
-# unlink("newfile.hd5");
 # print "completed\n";

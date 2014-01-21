@@ -7,7 +7,7 @@ use PDL::Types;
 #
 use Test::More tests => 2;
 
-my $filename = "reference.hd5";
+my $filename = "reference.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
@@ -37,3 +37,6 @@ my $dereferenced = $ref->get();
 $expected = '[5 6 7]';
 #print "dereferenced '$dereferenced'\n";
 ok("$dereferenced" eq $expected);
+
+# clean up file
+unlink $filename if( -e $filename);

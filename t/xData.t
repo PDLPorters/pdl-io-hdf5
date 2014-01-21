@@ -7,7 +7,7 @@ use PDL::Types;
 #
 use Test::More tests => 2;
 
-my $filename = "xData.hd5";
+my $filename = "xData.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 
@@ -35,3 +35,6 @@ $xdata = $group->dataset("xdata")->get();
 $expected = '[2 3 4 5 6 7 8 9 10 11 12 13 14]';
 diag "xdata '$xdata'\n";
 ok( "$xdata" eq $expected);
+
+# clean up file
+unlink $filename if( -e $filename);

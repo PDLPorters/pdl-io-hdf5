@@ -3,11 +3,17 @@ use PDL::Char;
 use PDL::IO::HDF5;
 use PDL::Types;
 
+BEGIN {
+use Config;
+our $have_LL = $Config{ivsize} == 4 ? 0 : 1;
+our $tests = $have_LL ? 13 : 11;
+};
+
 
 # Test case for HDF5 attributes that are pdls 
 #   This is a new feature as-of version 0.64
 #
-use Test::More tests => 13;
+use Test::More tests => $tests;
 
 my $filename = "newFile.hdf5";
 # get rid of filename if it already exists
@@ -29,12 +35,14 @@ $dataset->set($bt);
 # Store a scalar and pdl attribute
 $dataset->attrSet('UNITS'=>'K');
 $dataset->attrSet('NUM_COL'=>pdl(long,[[1,2,3],[4,5,6]]));
-$dataset->attrSet('NUM_COLLONG'=>pdl(longlong,[[123456789123456784,2,3],[4,5,6]]));
+$dataset->attrSet('NUM_COLLONG'=>pdl(longlong,[[123456789123456784,2,3],[4,5,6]]))
+  if $have_LL;
 $dataset->attrSet('NUM_ROW'=>$pchar);
 $dataset->attrSet('SCALING'=>'pepe');
 $dataset->attrSet('OFFSET'=>pdl(double,[0.0074]));
 $dataset->attrSet('ID'=>pdl(long,87));
-$dataset->attrSet('IDLONG'=>pdl(longlong,123456789123456784));
+$dataset->attrSet('IDLONG'=>pdl(longlong,123456789123456784))
+  if $have_LL;
 $dataset->attrSet('TEMPERATURE'=>pdl(double,3.1415927));
 
 # Set group attribute
@@ -56,12 +64,12 @@ $expected = '
 ';
 my $bt2=$dataset2->get();
 #print "expoected = '$bt2'\n";
-ok("$bt2" eq $expected);
+ok("$bt2" eq $expected);	#1
 
 $expected = 'K';
 my ($units)=$dataset2->attrGet('UNITS');
 #print "units '$units'\n";
-ok($units eq $expected);
+ok($units eq $expected);	#2
 
 
 $expected = '
@@ -72,14 +80,16 @@ $expected = '
 ';
 my ($numcol)=$dataset2->attrGet('NUM_COL');
 #print "numcol '$numcol'\n";
-ok("$numcol" eq $expected);
+ok("$numcol" eq $expected);	#3
 
-ok((ref($numcol) && $numcol->isa('PDL')) );
+ok((ref($numcol) && $numcol->isa('PDL')) );	#4
 
-$expected = '123456789123456784                  2                  3                  4                  5                  6';
-my ($numcollong)=$dataset2->attrGet('NUM_COLLONG');
-#print "numcollong '$numcollong'\n";
-ok(sprintf("%18i %18i %18i %18i %18i %18i",$numcollong->list()) eq $expected);
+if($have_LL) {
+  $expected = '123456789123456784                  2                  3                  4                  5                  6';
+  my ($numcollong)=$dataset2->attrGet('NUM_COLLONG');
+  #print "numcollong '$numcollong'\n";
+  ok(sprintf("%18i %18i %18i %18i %18i %18i",$numcollong->list()) eq $expected);
+}
 
 $expected = "[
  [ 'abc' 'def' 'ghi'  ] 
@@ -107,11 +117,12 @@ my ($id)=$dataset2->attrGet('ID');
 #print "id '$id'\n";
 ok("$id" eq $expected);
 
-
-$expected = '123456789123456784';
-my ($idlong)=$dataset2->attrGet('IDLONG');
-#print "idlong '$idlong'\n";
-ok("$idlong" eq $expected);
+if($have_LL) {
+  $expected = '123456789123456784';
+  my ($idlong)=$dataset2->attrGet('IDLONG');
+  #print "idlong '$idlong'\n";
+  ok("$idlong" eq $expected);
+}
 
 
 $expected = '3.1415927';

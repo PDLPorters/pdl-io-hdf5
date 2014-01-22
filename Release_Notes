@@ -1,3 +1,46 @@
+Release Notes for PDL-IO-HDF5 0.63_02 --------------------------
+
+General Notes:
+
+ * Another quick CPAN developers release
+
+   - It is a snapshot of the current git development tree
+     and everything may not work correctly or have complete
+     documentation.
+
+   - These release notes may not be fully complete.  Please
+     see Changes (from the git log) for full details.
+
+   - All tests may not pass, especially ones corresponding
+     to issues in Known_problems.
+   
+   - Manual build/install is recommended although the
+     cpan shell may be used by specifying the distribution
+     path rather than just the module name, e.g.:
+
+       cpan> get  CHM/PDL-IO-HDF5-0.63_02.tar.gz
+       cpan> make CHM/PDL-IO-HDF5-0.63_02.tar.gz
+       cpan> test CHM/PDL-IO-HDF5-0.63_02.tar.gz
+       cpan> look CHM/PDL-IO-HDF5-0.63_02.tar.gz
+
+Highlights:
+
+ * More cleanup:
+   - Add case for cygwin libhdf5.dll.a detection.
+   - Conditionalize longlong tests
+   - Fix type of H5T_VARIABLE constant
+
+ * Improved packaging, platform and library detection for HDF5.
+
+ * Add new features:
+   - unlinking of datasets
+   - extensible datasets
+   - creation of scalar references
+   - automatic dereferencing of scalar references
+   - support for longlong integer attributes and datasets
+
+
+
 Release Notes for PDL-IO-HDF5 0.63_01 --------------------------
 
 General Notes:

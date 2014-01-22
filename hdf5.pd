@@ -2739,7 +2739,7 @@ OUTPUT:
 
 # Sub to add the H5T_VARIABLE constant
 #  This is added manually here, rather than regenerate the constant function above
-int
+size_t
 H5T_VARIABLE()
 CODE:
         RETVAL = H5T_VARIABLE;

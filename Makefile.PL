@@ -18,7 +18,11 @@ BEGIN
                 'VERSION_FROM'  => 'hdf5.pd',
                 'NAME'     => 'PDL::IO::HDF5',
                 'DISTNAME' => "PDL-IO-HDF5",
-                'PREREQ_PM'  => { PDL => '2.004' }
+                'CONFIGURE_REQUIRES' => { PDL => '2.004' },
+                'BUILD_REQUIRES'     => { PDL => '2.004' },
+                'TEST_REQUIRES'      => { PDL => '2.004' },
+                'PREREQ_PM'          => { PDL => '2.004' },
+		'LICENSE'  => 'perl',
                 );
             exit();
     }
@@ -50,6 +54,12 @@ push(@libdirs,split(":",$ENV{'LD_LIBRARY_PATH'}));
 foreach my $libdir ( @libdirs ) {
     
   if (-e "$libdir/libhdf5.so") {
+    $hdf5_lib_path = $libdir;
+    print "Found libhdf5.so at $libdir/libhdf5.so\n";
+    last;
+  }
+
+  if (-e "$libdir/libhdf5.dll.a") {
     $hdf5_lib_path = $libdir;
     print "Found libhdf5.so at $libdir/libhdf5.so\n";
     last;
@@ -132,7 +142,11 @@ $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
-              'PREREQ_PM'  => { PDL => '2.004' },
+              'CONFIGURE_REQUIRES' => { PDL => '2.004' },
+              'BUILD_REQUIRES'     => { PDL => '2.004' },
+              'TEST_REQUIRES'      => { PDL => '2.004' },
+              'PREREQ_PM'          => { PDL => '2.004' },
+	      'LICENSE'      => 'perl',
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',

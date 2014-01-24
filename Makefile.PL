@@ -20,7 +20,7 @@ BEGIN
                 'DISTNAME' => "PDL-IO-HDF5",
                 'CONFIGURE_REQUIRES' => { PDL => '2.004' },
                 'BUILD_REQUIRES'     => { PDL => '2.004' },
-                'TEST_REQUIRES'      => { PDL => '2.004' },
+                 # 'TEST_REQUIRES'      => { PDL => '2.004' },
                 'PREREQ_PM'          => { PDL => '2.004' },
 		'LICENSE'  => 'perl',
                 );
@@ -144,7 +144,7 @@ WriteMakefile(
 	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
               'CONFIGURE_REQUIRES' => { PDL => '2.004' },
               'BUILD_REQUIRES'     => { PDL => '2.004' },
-              'TEST_REQUIRES'      => { PDL => '2.004' },
+               # 'TEST_REQUIRES'      => { PDL => '2.004' },
               'PREREQ_PM'          => { PDL => '2.004' },
 	      'LICENSE'      => 'perl',
 	      'VERSION_FROM' => 'hdf5.pd',

@@ -1,12 +1,14 @@
-PDL::IO::HDF5, version 0.63_01
+PDL::IO::HDF5
 
 From The Man Pages:
 -------------------
 
 NAME
+
      PDL::IO::HDF5 - PDL Interface to the HDF5 Data Format.
 
 DESCRIPTION
+
      This package provides an object-oriented interface for the
      PDL package to the HDF5 data-format. Information on the
      HDF5 Format can be found at the HDF Group's web site at
@@ -22,11 +24,12 @@ DESCRIPTION
 
     o Only HDF5 Simple dataspaces are supported.
 
+
 Also Included:
 --------------
 
 An experimental module for interactive viewing of HDF5 files
-using perl/tk is also included. The file tkviewtest is a short
+using perl/Tk is also included. The file tkviewtest is a short
 demo of this capability.
 
 
@@ -35,7 +38,7 @@ The following are required for installation:
 
 -- PDL v2.004
 
--- HDF5 version 1.2.0
+-- HDF5 version 1.2.0 or greater
 
 
 Installation:
@@ -55,6 +58,3 @@ Acknowledgements
 ----------------
 
 The idea for this module is based on the code of Doug Hunt's PDL::netCDF module.
-
-
-

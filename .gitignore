@@ -1,0 +1,8 @@
+PDL-*.tar.gz
+*~
+*.o
+*.c
+*.bs
+*.bak
+Makefile.old
+*-log.txt

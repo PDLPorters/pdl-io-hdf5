@@ -142,7 +142,7 @@ $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 $meta_merge = {
    'name' => 'PDL-IO-HDF5',
    'abstract' => 'PDL Interface to the HDF5 Data Format',
-   'release_status' => 'stable',
+   'release_status' => 'testing',   # 'stable',
    'author'   => [ 'Chris Marshall <chm@cpan.org>', ],
    'license'  => [ 'perl_5' ],
    'prereqs' => {
@@ -186,7 +186,7 @@ $meta_merge = {
    'provides' => {
       'PDL::IO::HDF5' => {
          'file' => 'hdf5.pd',
-         'version' => '0.6501',
+         'version' => '0.65_02',
       },
    },
 };

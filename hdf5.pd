@@ -1,6 +1,6 @@
 use Config;
 
-our $VERSION = '0.6501';
+our $VERSION = '0.65_02';
 pp_setversion(qq{'$VERSION'});
 
 # Necessary includes for .xs file

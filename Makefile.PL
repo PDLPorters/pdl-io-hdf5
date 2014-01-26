@@ -186,6 +186,7 @@ $meta_merge = {
    'provides' => {
       'PDL::IO::HDF5' => {
          'file' => 'hdf5.pd',
+         'version' => '0.6501',
       },
    },
 };
@@ -198,8 +199,8 @@ WriteMakefile(
                # 'TEST_REQUIRES'      => { PDL => '2.004' },
               'PREREQ_PM'          => { PDL => '2.004' },
 	      'LICENSE'      => 'perl',
+	      'VERSION_FROM' => 'hdf5.pd',   # Need to fix duplicate info in provides META key
               'META_MERGE'   => $meta_merge,
-	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',
 	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm',

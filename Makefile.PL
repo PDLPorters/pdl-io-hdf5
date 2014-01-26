@@ -139,6 +139,57 @@ $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
 
 $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
+$meta_merge = {
+   'name' => 'PDL-IO-HDF5',
+   'abstract' => 'PDL Interface to the HDF5 Data Format',
+   'release_status' => 'stable',
+   'author'   => [ 'Chris Marshall <chm@cpan.org>', ],
+   'license'  => [ 'perl_5' ],
+   'prereqs' => {
+      'runtime' => {
+         'requires' => {
+            'PDL' => '2.004',
+         },
+      },
+      'build' => {
+         'requires' => {
+            'ExtUtils::MakeMaker' => '0',
+            'PDL' => '2.007',
+            'Test::More' => '0',
+         },
+      },
+      'configure' => {
+         'requires' => {
+            'ExtUtils::MakeMaker' => '0',
+            'PDL' => '2.004',
+         },
+      },
+   },
+   resources => {
+      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.65/COPYRIGHT' ],
+      homepage    => 'http://pdl.perl.org/',
+      bugtracker  => {
+         web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=PDL-IO-HDF5',
+      },
+      repository  => {
+         url  => 'git://git.code.sf.net/p/pdl/pdl-io-hdf5',
+         web  => 'http://sourceforge.net/p/pdl/pdl-io-hdf5/ci/master/tree/',
+         type => 'git',
+      },
+   },
+   'dynamic_config' => 1,
+   'meta-spec' => {
+      'version' => '2',
+      'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
+   },
+   'generated_by' => 'Chris Marshall',
+   'provides' => {
+      'PDL::IO::HDF5' => {
+         'file' => 'hdf5.pd',
+      },
+   },
+};
+
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
@@ -147,6 +198,7 @@ WriteMakefile(
                # 'TEST_REQUIRES'      => { PDL => '2.004' },
               'PREREQ_PM'          => { PDL => '2.004' },
 	      'LICENSE'      => 'perl',
+              'META_MERGE'   => $meta_merge,
 	      'VERSION_FROM' => 'hdf5.pd',
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',

@@ -3,6 +3,7 @@ package PDL::IO::HDF5::Dataset;
 use Carp;
 
 use strict;
+use Config;
 
 # Global mapping variables
 our ($H5T_STRING, $H5T_REFERENCE, %PDLtoHDF5internalTypeMapping, %HDF5toPDLfileMapping, %PDLtoHDF5fileMapping);
@@ -193,15 +194,28 @@ B<Usage:>
 #   Mapping of PDL types to what types they are written to in the HDF5 file.
 #   For 64 Bit machines, we might need to modify this with some smarts to determine
 #   what is appropriate
-%PDLtoHDF5fileMapping = (
+my %PDLtoHDF5fileMapping;
+if ( $Config{byteorder} =~ m/4321$/ ) {
+    # Big endian.
+    %PDLtoHDF5fileMapping = (
 	$PDL::Types::PDL_B	=>	PDL::IO::HDF5::H5T_STD_I8BE(),
 	$PDL::Types::PDL_S	=> 	PDL::IO::HDF5::H5T_STD_I16BE(),
 	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_STD_I32BE(),
 	$PDL::Types::PDL_LL	=> 	PDL::IO::HDF5::H5T_STD_I64BE(),
         $PDL::Types::PDL_F	=>	PDL::IO::HDF5::H5T_IEEE_F32BE(),
 	$PDL::Types::PDL_D	=>	PDL::IO::HDF5::H5T_IEEE_F64BE(),
-);
-
+	);
+} else {
+    # Little endian.
+    %PDLtoHDF5fileMapping = (
+	$PDL::Types::PDL_B	=>	PDL::IO::HDF5::H5T_STD_I8LE(),
+	$PDL::Types::PDL_S	=> 	PDL::IO::HDF5::H5T_STD_I16LE(),
+	$PDL::Types::PDL_L	=> 	PDL::IO::HDF5::H5T_STD_I32LE(),
+	$PDL::Types::PDL_LL	=> 	PDL::IO::HDF5::H5T_STD_I64LE(),
+        $PDL::Types::PDL_F	=>	PDL::IO::HDF5::H5T_IEEE_F32LE(),
+	$PDL::Types::PDL_D	=>	PDL::IO::HDF5::H5T_IEEE_F64LE(),
+	);
+}
 
 
 sub set{

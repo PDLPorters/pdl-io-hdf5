@@ -43,6 +43,7 @@ $ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
 @libdirs =  (
     $ENV{'HDF5_PATH'}."/lib",
     $ENV{'HDF5_PATH'}."/lib64",
+    split(/ /, $Config{libpth}),  # TODO: This will break for paths with spaces
     '/usr/local/hdf5/lib',
     '/usr/local/lib',
     '/opt/local/lib',
@@ -82,6 +83,7 @@ unless(defined ($hdf5_lib_path) ){
 
 @incdirs =  (
     $ENV{'HDF5_PATH'}."/include",
+    $Config{usrinc},
     '/usr/local/hdf5/include',
     '/usr/local/include',
     '/opt/local/include',

@@ -192,7 +192,8 @@ $meta_merge = {
       },
    },
 };
-
+# create GENERATED subdir with *.pm files during 'make dist' (to make metacpan.org happy)
+my $preop = '$(PERL) -I$(INST_ARCHLIB) -I$(INST_LIB) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)';
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
@@ -214,7 +215,7 @@ WriteMakefile(
 	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
 				   'HDF5.pm HDF5.xs HDF5.o HDF5.c'},
-	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz' },	
+	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },	
 	      );
 
 sub MY::postamble { pdlpp_postamble($package); }	

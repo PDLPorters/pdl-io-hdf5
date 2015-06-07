@@ -25,7 +25,11 @@ General Notes:
 
 Highlights:
 
- * TBD
+ * Add GENERATE pod from .pd support for dist
+
+ * Fix sf.net #386 PDL::IO::HDF5 improved lib detection [PATCH]
+    
+ * Write datasets with native endianness.
 
 
 

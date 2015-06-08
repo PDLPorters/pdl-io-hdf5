@@ -168,7 +168,7 @@ $meta_merge = {
       },
    },
    resources => {
-      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.65/COPYRIGHT' ],
+      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.71/COPYRIGHT' ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
          web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=PDL-IO-HDF5',
@@ -188,7 +188,7 @@ $meta_merge = {
    'provides' => {
       'PDL::IO::HDF5' => {
          'file' => 'hdf5.pd',
-         'version' => '0.65_02',
+         'version' => '0.71',
       },
    },
 };

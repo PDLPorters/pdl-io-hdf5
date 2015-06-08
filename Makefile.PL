@@ -20,7 +20,6 @@ BEGIN
                 'DISTNAME' => "PDL-IO-HDF5",
                 'CONFIGURE_REQUIRES' => { PDL => '2.004' },
                 'BUILD_REQUIRES'     => { PDL => '2.004' },
-                 # 'TEST_REQUIRES'      => { PDL => '2.004' },
                 'PREREQ_PM'          => { PDL => '2.004' },
 		'LICENSE'  => 'perl',
                 );
@@ -62,7 +61,7 @@ foreach my $libdir ( @libdirs ) {
 
   if (-e "$libdir/libhdf5.dll.a") {
     $hdf5_lib_path = $libdir;
-    print "Found libhdf5.so at $libdir/libhdf5.so\n";
+    print "Found libhdf5.dll.a at $libdir/libhdf5.dll.a\n";
     last;
   }
 
@@ -144,9 +143,14 @@ $package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
 $meta_merge = {
    'name' => 'PDL-IO-HDF5',
    'abstract' => 'PDL Interface to the HDF5 Data Format',
-   'release_status' => 'testing',   # 'stable',
+   'release_status' => 'stable',   # 'testing',
    'author'   => [ 'Chris Marshall <chm@cpan.org>', ],
    'license'  => [ 'perl_5' ],
+   'version' => '0.72',
+   'meta_spec' => {
+      'version' => '2',
+      'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
+   },
    'prereqs' => {
       'runtime' => {
          'requires' => {
@@ -168,7 +172,7 @@ $meta_merge = {
       },
    },
    resources => {
-      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.71/COPYRIGHT' ],
+      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.72/COPYRIGHT' ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
          web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=PDL-IO-HDF5',
@@ -188,7 +192,7 @@ $meta_merge = {
    'provides' => {
       'PDL::IO::HDF5' => {
          'file' => 'hdf5.pd',
-         'version' => '0.71',
+         'version' => '0.72',
       },
    },
 };

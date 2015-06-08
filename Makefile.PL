@@ -146,7 +146,7 @@ $meta_merge = {
    'release_status' => 'stable',   # 'testing',
    'author'   => [ 'Chris Marshall <chm@cpan.org>', ],
    'license'  => [ 'perl_5' ],
-   'version' => '0.72',
+   'version' => '0.73',
    'meta_spec' => {
       'version' => '2',
       'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
@@ -172,7 +172,7 @@ $meta_merge = {
       },
    },
    resources => {
-      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.72/COPYRIGHT' ],
+      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.73/COPYRIGHT' ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
          web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=PDL-IO-HDF5',
@@ -192,7 +192,7 @@ $meta_merge = {
    'provides' => {
       'PDL::IO::HDF5' => {
          'file' => 'hdf5.pd',
-         'version' => '0.72',
+         'version' => '0.73',
       },
    },
 };

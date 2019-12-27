@@ -1,9 +1,7 @@
 # Makefile.PL for a package defined by PP code.
 
 # Check for a PDL installation
-BEGIN
- {
-
+BEGIN {
     eval{ require PDL::Core::Dev };
     if( $@ ){
             print "\n#### Error requiring 'PDL::Core::Dev': Perhaps you don't have PDL installed ###\n";
@@ -28,18 +26,17 @@ BEGIN
     
 }  
 
-
+use strict;
+use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use Config;
 
 # 
 ## Search for hdf5 library and include file
-#
-$ENV{'HOME'} = '' unless defined( $ENV{'HOME'} ) ;
 $ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
 
-@libdirs =  (
+my @libdirs = grep $_, (
     $ENV{'HDF5_PATH'}."/lib",
     $ENV{'HDF5_PATH'}."/lib64",
     $ENV{HDF5_LIBDIR},
@@ -49,22 +46,22 @@ $ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
     '/opt/local/lib',
     '/usr/lib',
     '/opt/lib',
-    '/usr/lib64'
-    );
-push(@libdirs,split(":",$ENV{'LD_LIBRARY_PATH'}));
-@hdf5_lib=(
+    '/usr/lib64',
+    split(":",$ENV{'LD_LIBRARY_PATH'}||''),
+  );
+my @hdf5_lib=(
     "libhdf5.so",
     "libhdf5_serial.so",
     "libhdf5.dll.a",
     "libhdf5.a",
 );
 
+my $hdf5_lib_path;
 dirloop: foreach my $libdir ( @libdirs ) {
   foreach my $hdf5_lib_test (@hdf5_lib) {
-      print STDERR "testing $libdir/$hdf5_lib_test\n";
       if (-e "$libdir/$hdf5_lib_test") {
         print "Found $hdf5_lib_test at $libdir/$hdf5_lib_test\n";
-        $hdf5_lib=$hdf5_lib_test;
+        my $hdf5_lib=$hdf5_lib_test;
         $hdf5_lib=~s/\..*//;
         $hdf5_lib_path = $libdir;
         last dirloop;
@@ -91,28 +88,27 @@ foreach my $libdir ( @libdirs ) {
     print "Found libhdf5.a at $libdir/libhdf5.a\n";
     last;
   }
-
 }
 
 # We don't do a die here, because we would get bogus emails from CPAN testers
 unless(defined ($hdf5_lib_path) ){
-	print "####### Cannot find hdf5 library, libhdf5.so or libhdf5.a.  
+  print "####### Cannot find hdf5 library, libhdf5.so or libhdf5.a.
 #######   Please add the correct library path to Makefile.PL or install HDF\n";
-	exit();
+  exit();
 } 
 
-@incdirs =  (
+my @incdirs =  (
     $ENV{'HDF5_PATH'}."/include",
-    $ENV{HDF5_INCDIR},
     $Config{usrinc},
     '/usr/local/hdf5/include',
     '/usr/local/include',
     '/opt/local/include',
     '/usr/include',
     '/usr/include/hdf5/serial',
-    '/opt/include'
+    '/opt/include',
+    (map { my $s = $_; $s =~ s/\/lib([^\/]+)$/\/include/; $s } split(":",$ENV{'LD_LIBRARY_PATH'}||'')),
     );
-push(@incdirs,map { local $_ = $_; $_ =~ s/\/lib([^\/]+)$/\/include/; $_ } split(":",$ENV{'LD_LIBRARY_PATH'}));
+my $hdf5_include_path;
 foreach my $incdir ( @incdirs ) {
     if (-e "$incdir/hdf5.h") {
     $hdf5_include_path = $incdir;
@@ -123,14 +119,14 @@ foreach my $incdir ( @incdirs ) {
 
 # We don't do a die here, because we would get bogus emails from CPAN testers
 unless ( defined ($hdf5_include_path) ){
-	print "####### Cannot find hdf5 header file, hdf5.h.
+  print "####### Cannot find hdf5 header file, hdf5.h.
 #######   Please add the correct library path to Makefile.PL or install HDF5\n";
-	exit();
+  exit();
 } 
 
 # Flags to include jpeg and/or zlib during compilation
-$jpegLib = 0;
-$zLib = 0;
+my $jpegLib = 0;
+my $zLib = 0;
 if( -e "$hdf5_include_path/H5config.h"){
 	open( H5CONFIG, "$hdf5_include_path/H5config.h") or 
            die("Can't Open Include File '$hdf5_include_path/H5config.h'\n");
@@ -140,30 +136,29 @@ if( -e "$hdf5_include_path/H5config.h"){
 	}
 }
 
-
 # The following code was originally in the PDL::netCDF Makefile.PL
 #  (Not sure if it is really needed here)
 # Check if compiled under gcc/Linux.  In which case, define bool for the compiler
-$define_bool = '';
+my $define_bool = '';
 if ($Config{'osname'} =~ /linux/) {
   $define_bool = '-Dbool=int';
   print "Defining bool=int (linux seems to need this)\n";
 }
 
 #If in win32, add the required defined for the HDF5 libs to work:
-$define_win32HDF = '';
+my $define_win32HDF = '';
 if ($Config{'osname'} =~ /win32/i) {
   $define_win32HDF = '-D _HDF5USEDLL_ -D HASATTRIBUTE ';
   print "Defining _HDF5USEDLL_ for win32\n";
 }
             
-$LIBS = "-L$hdf5_lib_path -lhdf5_serial ";
+my $LIBS = "-L$hdf5_lib_path -lhdf5_serial ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
 
-$package = ["hdf5.pd",HDF5,PDL::IO::HDF5];
-$meta_merge = {
+my $package = ["hdf5.pd",'HDF5','PDL::IO::HDF5'];
+my $meta_merge = {
    'name' => 'PDL-IO-HDF5',
    'abstract' => 'PDL Interface to the HDF5 Data Format',
    'release_status' => 'stable',   # 'testing',
@@ -184,6 +179,10 @@ $meta_merge = {
          'requires' => {
             'ExtUtils::MakeMaker' => '0',
             'PDL' => '2.007',
+         },
+      },
+      test => {
+         requires => {
             'Test::More' => '0',
          },
       },
@@ -212,15 +211,10 @@ $meta_merge = {
       'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
    },
    'generated_by' => 'Chris Marshall',
-   'provides' => {
-      'PDL::IO::HDF5' => {
-         'file' => 'hdf5.pd',
-         'version' => '0.73',
-      },
-   },
 };
 # create GENERATED subdir with *.pm files during 'make dist' (to make metacpan.org happy)
 my $preop = '$(PERL) -I$(INST_ARCHLIB) -I$(INST_LIB) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)';
+
 WriteMakefile(
 	      'NAME'  	     => 'PDL::IO::HDF5',
 	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
@@ -229,7 +223,7 @@ WriteMakefile(
                # 'TEST_REQUIRES'      => { PDL => '2.004' },
               'PREREQ_PM'          => { PDL => '2.004' },
 	      'LICENSE'      => 'perl',
-	      'VERSION_FROM' => 'hdf5.pd',   # Need to fix duplicate info in provides META key
+	      'VERSION_FROM' => 'hdf5.pd',
               'META_MERGE'   => $meta_merge,
 	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
 	      'OBJECT'       => 'HDF5.o ',
@@ -242,12 +236,7 @@ WriteMakefile(
 	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
 				   'HDF5.pm HDF5.xs HDF5.o HDF5.c newFile.hdf5'},
-	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },	
+	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },
 	      );
 
 sub MY::postamble { pdlpp_postamble($package); }	
-
-
-
-
-

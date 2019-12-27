@@ -5,6 +5,7 @@ HDF5/Group.pm
 HDF5/tkview.pm
 Makefile.PL
 MANIFEST			This list of files
+MANIFEST.SKIP
 README
 Changes
 t/attribPDL.t
@@ -19,3 +20,4 @@ t/ztotal_index.t
 tkviewtest
 typemap
 varlen.hdf5
+xt/01-checkmanifest.t

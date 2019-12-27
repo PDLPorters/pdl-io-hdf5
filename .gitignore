@@ -6,3 +6,4 @@ PDL-*.tar.gz
 *.bak
 Makefile.old
 *-log.txt
+/HDF5.*

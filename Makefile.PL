@@ -175,11 +175,11 @@ $meta_merge = {
       license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.73/COPYRIGHT' ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
-         web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=PDL-IO-HDF5',
+         web    => 'https://github.com/PDLPorters/pdl-io-hdf5/issues',
       },
       repository  => {
-         url  => 'git://git.code.sf.net/p/pdl/pdl-io-hdf5',
-         web  => 'http://sourceforge.net/p/pdl/pdl-io-hdf5/ci/master/tree/',
+         url  => 'git@github.com:PDLPorters/pdl-io-hdf5.git',
+         web  => 'https://github.com/PDLPorters/pdl-io-hdf5',
          type => 'git',
       },
    },

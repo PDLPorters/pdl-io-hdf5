@@ -1,44 +1,16 @@
-# Makefile.PL for a package defined by PP code.
-
-# Check for a PDL installation
-BEGIN {
-    eval{ require PDL::Core::Dev };
-    if( $@ ){
-            print "\n#### Error requiring 'PDL::Core::Dev': Perhaps you don't have PDL installed ###\n";
-            print "####  This module requires a PDL installation                           ###\n";
-            
-	    require ExtUtils::MakeMaker;
-	    import  ExtUtils::MakeMaker;
-
-            # Write out a simple makefile with PREREQ_PM, so CPAN will at least detect our
-            #   prerequesites.
-            WriteMakefile( 
-                'VERSION_FROM'  => 'hdf5.pd',
-                'NAME'     => 'PDL::IO::HDF5',
-                'DISTNAME' => "PDL-IO-HDF5",
-                'CONFIGURE_REQUIRES' => { PDL => '2.004' },
-                'BUILD_REQUIRES'     => { PDL => '2.004' },
-                'PREREQ_PM'          => { PDL => '2.004' },
-		'LICENSE'  => 'perl',
-                );
-            exit();
-    }
-    
-}  
-
 use strict;
 use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use Config;
 
-# 
 ## Search for hdf5 library and include file
-$ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
+$ENV{HDF5_PATH} ||= '';
 
-my @libdirs = grep $_, (
-    $ENV{'HDF5_PATH'}."/lib",
-    $ENV{'HDF5_PATH'}."/lib64",
+sub get_lib_paths {
+  permutate(grep $_, (
+    $ENV{HDF5_PATH}."/lib",
+    $ENV{HDF5_PATH}."/lib64",
     $ENV{HDF5_LIBDIR},
     split(/ /, $Config{libpth}),  # TODO: This will break for paths with spaces
     '/usr/local/hdf5/lib',
@@ -47,46 +19,30 @@ my @libdirs = grep $_, (
     '/usr/lib',
     '/opt/lib',
     '/usr/lib64',
-    split(":",$ENV{'LD_LIBRARY_PATH'}||''),
-  );
-my @hdf5_lib=(
-    "libhdf5.so",
-    "libhdf5_serial.so",
-    "libhdf5.dll.a",
-    "libhdf5.a",
-);
-
-my $hdf5_lib_path;
-dirloop: foreach my $libdir ( @libdirs ) {
-  foreach my $hdf5_lib_test (@hdf5_lib) {
-      if (-e "$libdir/$hdf5_lib_test") {
-        print "Found $hdf5_lib_test at $libdir/$hdf5_lib_test\n";
-        my $hdf5_lib=$hdf5_lib_test;
-        $hdf5_lib=~s/\..*//;
-        $hdf5_lib_path = $libdir;
-        last dirloop;
-      }
-  }
+    split(":",$ENV{LD_LIBRARY_PATH}||''),
+  ));
 }
+sub permutate {
+  (
+    @_,
+    (map "$_/serial", @_),
+    (map "$_/hdf5/serial", @_),
+  );
+}
+my @lib_base = qw(hdf5 hdf5_serial);
 
-foreach my $libdir ( @libdirs ) {
-    
-  if (-e "$libdir/libhdf5.so") {
-    $hdf5_lib_path = $libdir;
-    print "Found libhdf5.so at $libdir/libhdf5.so\n";
-    last;
-  }
-
-  if (-e "$libdir/libhdf5.dll.a") {
-    $hdf5_lib_path = $libdir;
-    print "Found libhdf5.dll.a at $libdir/libhdf5.dll.a\n";
-    last;
-  }
-
-  if (-e "$libdir/libhdf5.a") {
-    $hdf5_lib_path = $libdir;
-    print "Found libhdf5.a at $libdir/libhdf5.a\n";
-    last;
+my ($hdf5_lib_path, $hdf5_lib_base);
+DIR: foreach my $libdir ( get_lib_paths() ) {
+  for my $extension (".$Config{dlext}", $Config{_a}, ".dll.a") {
+    for my $base (@lib_base) {
+      my $shortfile = "lib$base$extension";
+      my $file = "$libdir/$shortfile";
+      next if !-e $file;
+      $hdf5_lib_path = $libdir;
+      $hdf5_lib_base = $base;
+      print "Found $shortfile at $file\n";
+      last DIR;
+    }
   }
 }
 
@@ -95,24 +51,18 @@ unless(defined ($hdf5_lib_path) ){
   print "####### Cannot find hdf5 library, libhdf5.so or libhdf5.a.
 #######   Please add the correct library path to Makefile.PL or install HDF\n";
   exit();
-} 
+}
 
-my @incdirs =  (
-    $ENV{'HDF5_PATH'}."/include",
-    $Config{usrinc},
-    '/usr/local/hdf5/include',
-    '/usr/local/include',
-    '/opt/local/include',
-    '/usr/include',
-    '/usr/include/hdf5/serial',
-    '/opt/include',
-    (map { my $s = $_; $s =~ s/\/lib([^\/]+)$/\/include/; $s } split(":",$ENV{'LD_LIBRARY_PATH'}||'')),
-    );
 my $hdf5_include_path;
-foreach my $incdir ( @incdirs ) {
-    if (-e "$incdir/hdf5.h") {
+foreach my $incdir (
+  permutate($Config{usrinc}),
+  (map { my $s = $_; $s =~ s/\/lib[^\/]*/\/include/; $s } get_lib_paths()),
+) {
+  my $shortfile = "hdf5.h";
+  my $file = "$incdir/$shortfile";
+  if (-e $file) {
     $hdf5_include_path = $incdir;
-    print "Found hdf5.h at $incdir/hdf5.h\n";
+    print "Found $shortfile at $file\n";
     last;
   }
 }
@@ -120,15 +70,15 @@ foreach my $incdir ( @incdirs ) {
 # We don't do a die here, because we would get bogus emails from CPAN testers
 unless ( defined ($hdf5_include_path) ){
   print "####### Cannot find hdf5 header file, hdf5.h.
-#######   Please add the correct library path to Makefile.PL or install HDF5\n";
+#######   Please add the correct include path to Makefile.PL or install HDF5\n";
   exit();
-} 
+}
 
 # Flags to include jpeg and/or zlib during compilation
 my $jpegLib = 0;
 my $zLib = 0;
 if( -e "$hdf5_include_path/H5config.h"){
-	open( H5CONFIG, "$hdf5_include_path/H5config.h") or 
+	open( H5CONFIG, "$hdf5_include_path/H5config.h") or
            die("Can't Open Include File '$hdf5_include_path/H5config.h'\n");
 	while(defined( $_ = <H5CONFIG>)){
 		$jpegLib = 1 if( /^\s*\#define\s+HAVE_LIBJPEG\s+1/ );
@@ -151,8 +101,8 @@ if ($Config{'osname'} =~ /win32/i) {
   $define_win32HDF = '-D _HDF5USEDLL_ -D HASATTRIBUTE ';
   print "Defining _HDF5USEDLL_ for win32\n";
 }
-            
-my $LIBS = "-L$hdf5_lib_path -lhdf5_serial ";
+
+my $LIBS = "-L$hdf5_lib_path -l$hdf5_lib_base ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
@@ -216,27 +166,27 @@ my $meta_merge = {
 my $preop = '$(PERL) -I$(INST_ARCHLIB) -I$(INST_LIB) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)';
 
 WriteMakefile(
-	      'NAME'  	     => 'PDL::IO::HDF5',
-	      'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",  
-              'CONFIGURE_REQUIRES' => { PDL => '2.004' },
-              'BUILD_REQUIRES'     => { PDL => '2.004' },
-               # 'TEST_REQUIRES'      => { PDL => '2.004' },
-              'PREREQ_PM'          => { PDL => '2.004' },
-	      'LICENSE'      => 'perl',
-	      'VERSION_FROM' => 'hdf5.pd',
-              'META_MERGE'   => $meta_merge,
-	      'TYPEMAPS'     => [&PDL_TYPEMAP()], 
-	      'OBJECT'       => 'HDF5.o ',
-	      'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm',
-	      			  'HDF5/Group.pm' => '$(INST_LIBDIR)/HDF5/Group.pm',
-	      			  'HDF5/Dataset.pm' => '$(INST_LIBDIR)/HDF5/Dataset.pm',
-	      			  'HDF5/tkview.pm' => '$(INST_LIBDIR)/HDF5/tkview.pm',
-				},
-	      'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path", 
-	      'LIBS'         => [$LIBS],  
-	      'clean'        => {'FILES'  => 
-				   'HDF5.pm HDF5.xs HDF5.o HDF5.c newFile.hdf5'},
-	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },
-	      );
+  'NAME'  	     => 'PDL::IO::HDF5',
+  'CCFLAGS'      => "$Config{ccflags} $define_bool $define_win32HDF -DH5_USE_16_API -g",
+  'CONFIGURE_REQUIRES' => { PDL => '2.004' },
+  'BUILD_REQUIRES'     => { PDL => '2.004' },
+   # 'TEST_REQUIRES'      => { PDL => '2.004' },
+  'PREREQ_PM'          => { PDL => '2.004' },
+  'LICENSE'      => 'perl',
+  'VERSION_FROM' => 'hdf5.pd',
+  'META_MERGE'   => $meta_merge,
+  'TYPEMAPS'     => [&PDL_TYPEMAP()],
+  'OBJECT'       => 'HDF5.o ',
+  'PM'           => { 'HDF5.pm' => '$(INST_LIBDIR)/HDF5.pm',
+                      'HDF5/Group.pm' => '$(INST_LIBDIR)/HDF5/Group.pm',
+                      'HDF5/Dataset.pm' => '$(INST_LIBDIR)/HDF5/Dataset.pm',
+                      'HDF5/tkview.pm' => '$(INST_LIBDIR)/HDF5/tkview.pm',
+                    },
+  'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path",
+  'LIBS'         => [$LIBS],
+  'clean'        => {'FILES'  =>
+                       'HDF5.pm HDF5.xs HDF5.o HDF5.c newFile.hdf5'},
+  'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },
+);
 
 sub MY::postamble { pdlpp_postamble($package); }	

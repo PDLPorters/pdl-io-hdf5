@@ -218,7 +218,7 @@ WriteMakefile(
 	      'INC'          => &PDL_INCLUDE()." -I$hdf5_include_path", 
 	      'LIBS'         => [$LIBS],  
 	      'clean'        => {'FILES'  => 
-				   'HDF5.pm HDF5.xs HDF5.o HDF5.c'},
+				   'HDF5.pm HDF5.xs HDF5.o HDF5.c newFile.hdf5'},
 	      'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },	
 	      );
 

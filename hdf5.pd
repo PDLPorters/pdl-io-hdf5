@@ -1201,7 +1201,7 @@ sub create_low_level {
     $xsout .= ");\n";
     $xsout .= "OUTPUT:\n";
     $xsout .= "\tRETVAL\n";
-    foreach $var (keys %output) {
+    foreach $var (sort keys %output) {
       $xsout .= "\t$var\n";
     }
     $xsout .= "\n\n";

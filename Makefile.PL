@@ -109,6 +109,7 @@ unless(defined ($hdf5_lib_path) ){
     '/usr/local/include',
     '/opt/local/include',
     '/usr/include',
+    '/usr/include/hdf5/serial',
     '/opt/include'
     );
 push(@incdirs,map { local $_ = $_; $_ =~ s/\/lib([^\/]+)$/\/include/; $_ } split(":",$ENV{'LD_LIBRARY_PATH'}));

@@ -52,7 +52,7 @@ my $dataset = $hdfobj->dataset('rootdataset');
 my $pdl = sequence(5,4);
 
 
-ok($dataset->set($pdl) );
+ok($dataset->set($pdl, unlimited => 1) );
 # print "pdl written = \n".$pdl."\n";
 
 # Create String dataset using PDL::Char
@@ -60,7 +60,7 @@ my $dataset2 = $hdfobj->dataset('charData');
 
 my $pdlChar = new PDL::Char( [ ["abccc", "def", "ghi"],["jkl", "mno", 'pqr'] ] );
  
-ok($dataset2->set($pdlChar));
+ok($dataset2->set($pdlChar, unlimited => 1));
 
 
 my $pdl2 = $dataset->get;
@@ -92,7 +92,7 @@ $dataset = $subgroup->dataset('my dataset');
 $pdl = sequence(5,4)->float; # Try a non-default data type
 
 
-ok( $dataset->set($pdl) );
+ok( $dataset->set($pdl, unlimited => 1) );
 # print "pdl written = \n".$pdl."\n";
 
 
@@ -119,7 +119,7 @@ $dataset = $subgroup->dataset('my dataset2');
 $pdl = sequence(5,4)->long; # Try a non-default data type
 
 
-ok( $dataset->set($pdl) );
+ok( $dataset->set($pdl, unlimited => 1) );
 # print "pdl written = \n".$pdl."\n";
 
 

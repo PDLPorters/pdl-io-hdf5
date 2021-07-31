@@ -30,7 +30,7 @@ my $group=$hdf5->group('Radiometric information');
 
 # Store a dataset
 my $dataset=$group->dataset('SP_BT');
-$dataset->set($bt);
+$dataset->set($bt, unlimited => 1);
 
 # Store a scalar and pdl attribute
 $dataset->attrSet('UNITS'=>'K');

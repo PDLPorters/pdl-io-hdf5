@@ -78,7 +78,7 @@ my $dataset = new PDL::IO::HDF5::Dataset( 'name'=> 'data1', parent => $rootGroup
 my $pdl = sequence(5,4);
 
 
-ok( $dataset->set($pdl) );
+ok( $dataset->set($pdl, unlimited => 1) );
 # print "pdl written = \n".$pdl."\n";
 
 

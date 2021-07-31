@@ -1624,7 +1624,7 @@ char *s;
     return -1;
 }
 
-double 
+hid_t
 constant(name, arg)
 char *name;
 int arg;
@@ -2507,7 +2507,7 @@ EOXS
 
 pp_addxs('',<<'EOXS');
 
-double
+hid_t
 constant(name,arg)
 	char *		name
 	int		arg
@@ -2739,7 +2739,7 @@ OUTPUT:
 
 # Sub to add the H5T_VARIABLE constant
 #  This is added manually here, rather than regenerate the constant function above
-size_t
+hid_t
 H5T_VARIABLE()
 CODE:
         RETVAL = H5T_VARIABLE;

@@ -42,6 +42,7 @@ $ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
 @libdirs =  (
     $ENV{'HDF5_PATH'}."/lib",
     $ENV{'HDF5_PATH'}."/lib64",
+    $ENV{HDF5_LIBDIR},
     split(/ /, $Config{libpth}),  # TODO: This will break for paths with spaces
     '/usr/local/hdf5/lib',
     '/usr/local/lib',
@@ -51,6 +52,26 @@ $ENV{'HDF5_PATH'} = '' unless defined ( $ENV{'HDF5_PATH'} );
     '/usr/lib64'
     );
 push(@libdirs,split(":",$ENV{'LD_LIBRARY_PATH'}));
+@hdf5_lib=(
+    "libhdf5.so",
+    "libhdf5_serial.so",
+    "libhdf5.dll.a",
+    "libhdf5.a",
+);
+
+dirloop: foreach my $libdir ( @libdirs ) {
+  foreach my $hdf5_lib_test (@hdf5_lib) {
+      print STDERR "testing $libdir/$hdf5_lib_test\n";
+      if (-e "$libdir/$hdf5_lib_test") {
+        print "Found $hdf5_lib_test at $libdir/$hdf5_lib_test\n";
+        $hdf5_lib=$hdf5_lib_test;
+        $hdf5_lib=~s/\..*//;
+        $hdf5_lib_path = $libdir;
+        last dirloop;
+      }
+  }
+}
+
 foreach my $libdir ( @libdirs ) {
     
   if (-e "$libdir/libhdf5.so") {
@@ -82,6 +103,7 @@ unless(defined ($hdf5_lib_path) ){
 
 @incdirs =  (
     $ENV{'HDF5_PATH'}."/include",
+    $ENV{HDF5_INCDIR},
     $Config{usrinc},
     '/usr/local/hdf5/include',
     '/usr/local/include',
@@ -134,7 +156,7 @@ if ($Config{'osname'} =~ /win32/i) {
   print "Defining _HDF5USEDLL_ for win32\n";
 }
             
-$LIBS = "-L$hdf5_lib_path -lhdf5 ";
+$LIBS = "-L$hdf5_lib_path -lhdf5_serial ";
 $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";

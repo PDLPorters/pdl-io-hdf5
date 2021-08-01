@@ -19,7 +19,7 @@ my $group=$hdf5->group('group1');
 # Store a dataset
 my $dataset=$group->dataset('data1');
 my $data = pdl [ 2.0, 3.0, 4.0 ];
-$dataset->set($data);
+$dataset->set($data, unlimited => 1);
 
 $expected = 'data1';
 my @datasets1=$group->datasets();

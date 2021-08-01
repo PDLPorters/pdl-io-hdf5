@@ -10,7 +10,7 @@ use PDL::IO::HDF5::Dataset;
 use Test::More tests => 17;
 
 # New File Check:
-my $filename = "newFile.hdf5";
+my $filename = "group.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 

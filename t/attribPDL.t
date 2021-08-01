@@ -15,7 +15,7 @@ our $tests = $have_LL ? 13 : 11;
 #
 use Test::More tests => $tests;
 
-my $filename = "newFile.hdf5";
+my $filename = "attrib.hdf5";
 # get rid of filename if it already exists
 unlink $filename if( -e $filename);
 

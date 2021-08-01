@@ -133,7 +133,7 @@ my $meta_merge = {
       },
       test => {
          requires => {
-            'Test::More' => '0',
+            'Test::More' => '0.88', # done_testing
          },
       },
       'configure' => {

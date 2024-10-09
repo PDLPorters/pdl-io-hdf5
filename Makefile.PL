@@ -133,13 +133,13 @@ my $meta_merge = {
    'prereqs' => {
       'runtime' => {
          'requires' => {
-            'PDL' => '2.004',
+            'PDL' => '2.064',
          },
       },
       'build' => {
          'requires' => {
             'ExtUtils::MakeMaker' => '0',
-            'PDL' => '2.007',
+            'PDL' => '2.064',
          },
       },
       test => {
@@ -150,7 +150,7 @@ my $meta_merge = {
       'configure' => {
          'requires' => {
             'ExtUtils::MakeMaker' => '0',
-            'PDL' => '2.004',
+            'PDL' => '2.064', # new types like ULL, CLD
          },
       },
    },
@@ -171,7 +171,6 @@ my $meta_merge = {
       'version' => '2',
       'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
    },
-   'generated_by' => 'Chris Marshall',
 };
 # create GENERATED subdir with *.pm files during 'make dist' (to make metacpan.org happy)
 my $preop = '$(PERL) -I$(INST_ARCHLIB) -I$(INST_LIB) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)';

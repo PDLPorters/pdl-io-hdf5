@@ -1,3 +1,4 @@
+0.76 2024-10-09
 - handle PDL 2.064+ types like signed byte (#5) - thanks @a-shahba for report
 
 0.75 2021-08-08

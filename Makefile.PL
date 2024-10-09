@@ -120,7 +120,10 @@ my $meta_merge = {
    'name' => 'PDL-IO-HDF5',
    'abstract' => 'PDL Interface to the HDF5 Data Format',
    'release_status' => 'stable',   # 'testing',
-   'author'   => [ 'Chris Marshall <chm@cpan.org>', ],
+   'author'   => [
+     'John Cerney <j-cerney1 AT raytheon.com>',
+     'Andrew Benson <abenson AT obs.carnegiescience.edu>',
+   ],
    'license'  => [ 'perl_5' ],
    'version' => '0.73',
    'meta_spec' => {

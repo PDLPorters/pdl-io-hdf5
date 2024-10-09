@@ -7,8 +7,16 @@ use Config;
 ## Search for hdf5 library and include file
 $ENV{HDF5_PATH} ||= '';
 
+sub macos_get_lib_path {
+  return if $^O ne 'darwin';
+  my $pref = `brew --prefix hdf5`;
+  return if !$pref;
+  chomp $pref;
+  "$pref/lib";
+}
 sub get_lib_paths {
   permutate(grep $_, (
+    macos_get_lib_path(),
     $ENV{HDF5_PATH}."/lib",
     $ENV{HDF5_PATH}."/lib64",
     $ENV{HDF5_LIBDIR},

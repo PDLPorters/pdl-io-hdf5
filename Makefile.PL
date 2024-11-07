@@ -115,6 +115,21 @@ $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
 
+# Extract package version from HDF5.pm
+my $packageVersion;
+{
+	open my $fh, '<', 'HDF5.pm' or die 'Could not open HDF5.pm for reading';
+	while (<$fh>) {
+		if(/\$PDL::IO::HDF5::VERSION\h*=\h*('|")([\d.]+)\g1/) {
+			$packageVersion = $2;
+			last;
+		}
+	}
+	close $fh
+}
+die "Could not extract package version from HDF5.pm" unless defined $packageVersion;
+
+
 my $package = ["hdf5.pd",'HDF5','PDL::IO::HDF5'];
 my $meta_merge = {
    'name' => 'PDL-IO-HDF5',
@@ -125,7 +140,7 @@ my $meta_merge = {
      'Andrew Benson <abenson AT obs.carnegiescience.edu>',
    ],
    'license'  => [ 'perl_5' ],
-   'version' => '0.73',
+   'version' => $packageVersion,
    'meta_spec' => {
       'version' => '2',
       'url'     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
@@ -155,7 +170,7 @@ my $meta_merge = {
       },
    },
    resources => {
-      license     => [ 'http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-0.73/COPYRIGHT' ],
+      license     => [ "http://cpansearch.perl.org/src/CHM/PDL-IO-HDF5-$packageVersion/COPYRIGHT" ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
          web    => 'https://github.com/PDLPorters/pdl-io-hdf5/issues',
@@ -199,4 +214,4 @@ WriteMakefile(
   'dist'         => { COMPRESS => 'gzip', SUFFIX => 'gz', PREOP => $preop },
 );
 
-sub MY::postamble { pdlpp_postamble($package); }	
+sub MY::postamble { pdlpp_postamble($package); }

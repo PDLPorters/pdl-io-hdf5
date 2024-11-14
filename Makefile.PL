@@ -115,7 +115,6 @@ $LIBS .= " -lz" if($zLib);
 $LIBS .= " -ljpeg" if($jpegLib);
 $LIBS .= " -lm";
 
-
 my $package = ["hdf5.pd",'HDF5','PDL::IO::HDF5'];
 my $meta_merge = {
    'name' => 'PDL-IO-HDF5',
@@ -155,7 +154,7 @@ my $meta_merge = {
       },
    },
    resources => {
-      license     => [ 'the same terms as Perl' ],
+      license     => [ 'http://dev.perl.org/licenses/' ],
       homepage    => 'http://pdl.perl.org/',
       bugtracker  => {
          web    => 'https://github.com/PDLPorters/pdl-io-hdf5/issues',
@@ -183,7 +182,7 @@ WriteMakefile(
    # 'TEST_REQUIRES'      => { PDL => '2.004' },
   'PREREQ_PM'          => { PDL => '2.004' },
   'LICENSE'      => 'perl',
-  'VERSION_FROM' => 'HDF5.pm',
+  'VERSION_FROM' => 'hdf5.pd',
   'META_MERGE'   => $meta_merge,
   'TYPEMAPS'     => [&PDL_TYPEMAP()],
   'OBJECT'       => 'HDF5.o ',
